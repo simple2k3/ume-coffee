@@ -1,0 +1,63 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Chọn bàn - Quét QR</title>
+    <link href="{% static 'assets/css/main.css' %}" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;      /* căn giữa ngang */
+            justify-content: center;  /* căn giữa dọc */
+            height: 100vh;            /* chiếm toàn bộ chiều cao màn hình */
+            margin: 0;
+            background: #f4f4f4;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .table-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .table-item {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            text-align: center;
+            width: 200px;
+        }
+
+        .table-item img {
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Thông Tin Bàn</h1>
+    <div class="table-list">
+        {% for table in tables %}
+        <div class="table-item">
+            <p><strong>ID:</strong> {{ table.id }}</p>
+            <p><strong>Tên bàn:</strong> {{ table.name }}</p>
+            {% if table.qr_code %}
+                <img src="{{ table.qr_code.url }}" alt="QR {{ table.name }}" width="150"><br>
+                <a href="{{ table.qr_code.url }}" download>Tải mã QR</a>
+            {% else %}
+                <p>Chưa có mã QR</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
