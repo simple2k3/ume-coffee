@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}UME Coffee{% endblock %}</title>
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+
+  <!-- Favicon -->
+  <link rel="icon" href="{% static 'assets/img/favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'assets/img/apple-touch-icon.png' %}">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS -->
+  <link rel="stylesheet" href="{% static 'assets/vendor/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/vendor/aos/aos.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/vendor/swiper/swiper-bundle.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/vendor/glightbox/css/glightbox.min.css' %}">
+
+  <!-- Main CSS -->
+<link href="{% static 'assets/css/main.css' %}"  rel="stylesheet">
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ======= Header ======= -->
+<header id="header" class="header d-flex align-items-center light-background sticky-top">
+  <div class="container-fluid d-flex justify-content-between align-items-center position-relative">
+
+    <!-- Logo -->
+    <a href="{% url 'index_html' %}" class="logo d-flex align-items-center">
+      <img src="{% static 'assets/img/logo.jpg' %}" alt="UME Coffee">
+      <h1 class="sitename ms-2">UME COFFEE</h1>
+    </a>
+    <!-- Navbar -->
+    <nav id="navmenu" class="navmenu">
+      <ul>
+        <li><a href="{% url 'index_html' %}" class="{% if request.path == '/' %}active{% endif %}">Trang Chủ</a></li>
+        <li><a href="{% url 'portfolio' %}" class="{% if request.path == '/portfolio/' %}active{% endif %}">Sản Phẩm</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            Danh Mục
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            {% for category in categories_data %}
+              <li>
+                <a class="dropdown-item" href="{% url 'category_products' category.categories_id %}">
+                  {{ category.categories_name }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </li>
+        <li><a href="{% url 'contact' %}" class="{% if request.path == '/contact/' %}active{% endif %}">Liên Hệ</a></li>
+      </ul>
+      <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+    </nav>
+
+    <!-- Social Links -->
+    <div class="header-social-links">
+      <a href="#" class="twitter"><i class="bi bi-twitter-x"></i></a>
+      <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
+      <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
+      <a href="#" class="linkedin"><i class="bi bi-linkedin"></i></a>
+    </div>
+
+  </div>
+</header>
+<!-- End Header -->
+
+{% block content %}{% endblock %}
+
+<!-- ======= Footer ======= -->
+<footer id="footer" class="footer light-background">
+  <div class="container text-center">
+    <div class="copyright">
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">UME-Coffee</strong></p>
+    </div>
+    <div class="social-links d-flex justify-content-center">
+      <a href="#"><i class="bi bi-twitter-x"></i></a>
+      <a href="#"><i class="bi bi-facebook"></i></a>
+      <a href="#"><i class="bi bi-instagram"></i></a>
+      <a href="#"><i class="bi bi-linkedin"></i></a>
+    </div>
+    <div class="credits mt-2">
+      <p>Cao nguyên Vân Hòa - Đắk Lắk</p>
+    </div>
+  </div>
+</footer>
+<!-- End Footer -->
+
+<!-- Scroll Top -->
+<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
+  <i class="bi bi-arrow-up-short"></i>
+</a>
+
+<!-- Vendor JS -->
+<script src="{% static 'assets/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'assets/vendor/php-email-form/validate.js' %}"></script>
+<script src="{% static 'assets/vendor/aos/aos.js' %}"></script>
+<script src="{% static 'assets/vendor/waypoints/noframework.waypoints.js' %}"></script>
+<script src="{% static 'assets/vendor/purecounter/purecounter_vanilla.js' %}"></script>
+<script src="{% static 'assets/vendor/swiper/swiper-bundle.min.js' %}"></script>
+<script src="{% static 'assets/vendor/glightbox/js/glightbox.min.js' %}"></script>
+<script src="{% static 'assets/vendor/imagesloaded/imagesloaded.pkgd.min.js' %}"></script>
+<script src="{% static 'assets/vendor/isotope-layout/isotope.pkgd.min.js' %}"></script>
+
+<!-- Main JS -->
+<script src="{% static 'assets/js/main.js' %}"></script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>
