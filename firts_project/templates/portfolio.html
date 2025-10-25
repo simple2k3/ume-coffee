@@ -1,108 +1,103 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}Sản Phẩm - UME Coffee{% endblock %}
+    {% extends 'base.html' %}
+    {% load static %}
+    {% block title %}Quảng cáo sản phẩm - UME Coffee{% endblock %}
 
-{% block extra_head %}
-<style>
-.image-wrapper {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    background-color: #f8f9fa;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    border-radius: 8px;
+    {% block extra_head %}
+    <style>
+    .category-list {
+  display: flex;
+  flex-wrap: wrap;       /* Cho phép xuống hàng */
+  gap: 20px;             /* Khoảng cách giữa các danh mục */
+  margin-bottom: 60px;
 }
 
-.image-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
+.category-link {
+  flex: 1 1 calc(50% - 10px); /* 2 danh mục mỗi hàng */
+  text-decoration: none;
+  color: inherit;
 }
 
-.image-wrapper img:hover {
-    transform: scale(1.05);
+.category-info {
+  background-color: #fff8f0;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.category-info:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.category-info img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 10px;
 }
 
 .category-title {
-    color: #4A2C2A;
-    font-weight: 600;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #4A2C2A;
+  margin-bottom: 10px;
 }
 
-.portfolio-page .btn {
-    background-color: #4A2C2A;
-    color: #fff;
-    border-radius: 20px;
-    padding: 8px 20px;
-    border: none;
+.category-desc {
+  font-size: 1rem;
+  color: #6B4E31;
 }
 
-.portfolio-page .btn:hover {
-    background-color: #3D2420;
-}
+    </style>
+    {% endblock %}
 
-.portfolio-page h1,
-.portfolio-page h2,
-.portfolio-page h3,
-.portfolio-page h4,
-.portfolio-page h5,
-.portfolio-page h6 {
-    font-weight: 600;
-    color: #4A2C2A;
-}
+    {% block content %}
+    <main class="main portfolio-page">
+      <section id="portfolio" class="portfolio section text-center">
+        <div class="container section-title" data-aos="fade-up">
+          <h2>Quảng cáo sản phẩm</h2>
+        </div>
+        <div class="container mt-4">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-4" style="background: transparent; padding: 0;">
+              {% for crumb in request.breadcrumbs %}
+                <li class="breadcrumb-item {% if forloop.last %}active text-secondary{% endif %}"
+                    {% if forloop.last %}aria-current="page"{% endif %}>
+                  {% if crumb.url and not forloop.last %}
+                    <a href="{{ crumb.url }}">{{ crumb.text }}</a>
+                  {% else %}
+                    <span>{{ crumb.text }}</span>
+                  {% endif %}
+                </li>
+                {% if not forloop.last %}<li class="breadcrumb-separator mx-1">/</li>{% endif %}
+              {% endfor %}
+            </ol>
+          </nav>
 
-.portfolio-page p,
-.portfolio-page a {
-    color: #6B4E31;
-}
-</style>
-{% endblock %}
+          <div class="category-list">
+  {% for category in product_data|slice:":6" %}  {# Chỉ lấy 6 danh mục #}
+    <a href="{% url 'category_products' category.categories_id %}" class="category-link">
+      <div class="category-info">
+        {% if category.imageUrl %}
+          <img src="{{ category.imageUrl }}" alt="{{ category.category_name }}">
+        {% endif %}
+        <h3 class="category-title">{{ category.category_name }}</h3>
+        <p class="category-desc">
+          Khám phá những sản phẩm nổi bật trong danh mục {{ category.category_name }} của UME Coffee.
+        </p>
+      </div>
+    </a>
+  {% endfor %}
+</div>
 
-{% block content %}
-<main class="main portfolio-page">
-  <!-- Portfolio Section -->
-  <section id="portfolio" class="portfolio section">
-    <!-- Section Title -->
-    <div class="container section-title" data-aos="fade-up">
-      <h2>Sản Phẩm</h2>
-    </div><!-- End Section Title -->
-
-    <div class="container mt-4">
-      <!-- Danh sách sản phẩm -->
-      {% for category in product_data %}
-          <h2 class="mb-4 category-title">{{ category.category_name }}</h2>
-          <div class="row justify-content-center gy-4">
-            {% for product in category.products %}
-              <div class="col-md-6 d-flex justify-content-center">
-                <div class="card shadow-sm border-0 w-100" style="max-width: 350px;">
-                  <div class="image-wrapper">
-                    <img src="{{ product.image|default:'assets/img/default.jpg' }}" alt="{{ product.product_name }}">
-                  </div>
-                  <div class="card-body text-center">
-                    <h5 class="card-title">{{ product.product_name }}</h5>
-                    <p class="card-text mb-1 text-muted">Giá: {{ product.base_price }}₫</p>
-                    <div class="d-flex justify-content-center mt-2">
-                      <a href="#" class="btn btn-sm btn-outline-primary w-50 me-1">
-                        <i class="bi bi-eye"></i> Xem chi tiết
-                      </a>
-                      <button class="btn btn-sm btn-success w-50 add-to-cart-btn"
-                              data-product-id="{{ product.product_code }}"
-                              {% if not product.product_code %}disabled{% endif %}>
-                        <i class="bi bi-cart-plus"></i> Thêm vào giỏ
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            {% empty %}
-              <p class="text-center">Không có sản phẩm nào trong danh mục này.</p>
-            {% endfor %}
-          </div>
-          {% if not forloop.last %}<hr class="my-5">{% endif %}
-        {% endfor %}
-    </div>
-  </section><!-- /Portfolio Section -->
-</main>
-{% endblock %}
+        </div>
+      </section>
+    </main>
+    {% endblock %}

@@ -8,7 +8,6 @@ class TableServices:
         qr.add_data(url)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
-
         buffer = BytesIO()
         img.save(buffer, 'PNG')
         buffer.seek(0)

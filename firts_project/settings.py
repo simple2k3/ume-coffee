@@ -3,7 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
-BASE_NGROK_URL = os.getenv("NGROK_URL")  # VD: https://xxxx-xxxx.ngrok-free.app
+NGROK_URL = os.getenv("NGROK_URL", "").rstrip("/")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "first_app",
+    # "django_breadcrumbs",
 ]
 
 MIDDLEWARE = [
@@ -53,6 +54,9 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "first_app.context_processors.categories_processor",
+                "first_app.context_processors.breadcrumbs",
+
             ],
         },
     },
@@ -60,6 +64,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "firts_project.wsgi.application"
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.ngrok-free.app',
+]
 # Database
 DATABASES = {
     'default': {

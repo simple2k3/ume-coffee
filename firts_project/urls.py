@@ -8,12 +8,24 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('index.html', views.index, name='index_html'),
-    path('portfolio.html', views.portfolio, name='portfolio'),
-    path('contact/', views.contact, name='contact'),
     path('admin/', admin.site.urls),
+    path('index.html', views.index, name='index_html'),
+    path('portfolio/', views.portfolio, name='portfolio'),
+    path('contact/', views.contact, name='contact'),
+    #chi tiết sản phẩm
+    path('product/<str:product_code>/', views.product_detail, name='product_detail'),
+    #danh mục sản phẩm
+    path('category/<str:category_id>/', views.category_products, name='category_products'),
+    #table
     path('print-qr/<int:table_id>/', views.print_qr, name='print_qr'),
     path('table/<int:table_id>/', views.table_order, name='table_order'),
+    #order
+
+    #giỏ hàng
+    path('cart/', views.cart_view, name='cart'),
+    path('cart/add/<str:product_code>/', views.add_to_cart, name='add_to_cart'),
+    path('cart/remove/<str:product_code>/', views.remove_from_cart, name='remove_from_cart'),
+    #thanh toán
 ]
 
 if settings.DEBUG:

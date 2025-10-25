@@ -1,6 +1,6 @@
 from first_app.models import Categories, ProductMaster
 
-class CategoriesServices:
+class ProductsServices:
     @staticmethod
     def getlistproduct():
         categories = Categories.objects.prefetch_related('products').all()
@@ -21,3 +21,5 @@ class CategoriesServices:
                 ]
             })
         return result
+
+

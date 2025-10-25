@@ -39,51 +39,11 @@
 
 <body class="starter-page-page">
 
-  <header id="header" class="header d-flex align-items-center light-background sticky-top">
-    <div class="container-fluid position-relative d-flex align-items-center justify-content-between">
-
-      <a href="index.html" class="logo d-flex align-items-center me-auto me-xl-0">
-        <!-- Uncomment the line below if you also wish to use an image logo -->
-        <!-- <img src="assets/img/logo.png" alt=""> -->
-        <h1 class="sitename">Kelly</h1>
-      </a>
-      <nav id="navmenu" class="navmenu">
-        <ul>
-          <li><a href="index.html">Trang Chủ</a></li>
-          <li><a href="about.html">Giới Thiệu</a></li>
-          <li><a href="portfolio.html">Sản Phẩm</a></li>
-          <li class="dropdown"><a href="#"><span>Danh Mục</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-            <ul>
-              <li><a href="#">Dropdown 1</a></li>
-              <li class="dropdown"><a href="#"><span>Deep Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-                <ul>
-                  <li><a href="#">Deep Dropdown 1</a></li>
-                  <li><a href="#">Deep Dropdown 2</a></li>
-                  <li><a href="#">Deep Dropdown 3</a></li>
-                  <li><a href="#">Deep Dropdown 4</a></li>
-                  <li><a href="#">Deep Dropdown 5</a></li>
-                </ul>
-              </li>
-              <li><a href="#">Dropdown 2</a></li>
-              <li><a href="#">Dropdown 3</a></li>
-              <li><a href="#">Dropdown 4</a></li>
-            </ul>
-          </li>
-          <li><a href="contact.html">Liên Hệ</a></li>
-        </ul>
-        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
-      </nav>
-
-      <div class="header-social-links">
-        <a href="#" class="twitter"><i class="bi bi-twitter-x"></i></a>
-        <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
-        <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
-        <a href="#" class="linkedin"><i class="bi bi-linkedin"></i></a>
-      </div>
-
-    </div>
-  </header>
-
+        <header id="header" class="header d-flex align-items-center light-background sticky-top">
+          <a href="index.html" class="logo d-flex align-items-center">
+            <h1 class="sitename">UME Coffee</h1>
+          </a>
+        </header>
   <main class="main">
 
     <!-- Starter Section Section -->
@@ -124,6 +84,29 @@
       </div>
     </div>
 
+
+<!--                    <div class="d-flex justify-content-center align-items-center mt-2 gap-2">-->
+<!--                        &lt;!&ndash; Nút Xem chi tiết &ndash;&gt;-->
+<!--                        <a href="{% url 'product_detail' product.product_code %}"-->
+<!--                           class="btn btn-outline-primary d-flex align-items-center justify-content-center"-->
+<!--                           style="height:38px; min-width:120px;">-->
+<!--                            <i class="bi bi-eye me-1"></i> Xem chi tiết-->
+<!--                        </a>-->
+<!--                        &lt;!&ndash; Form Thêm vào giỏ &ndash;&gt;-->
+<!--                        <form action="{% url 'add_to_cart' product.product_code %}" method="post" class="d-flex align-items-center">-->
+<!--                            {% csrf_token %}-->
+<!--                            <div class="input-group input-group-sm" style="width:160px; height:38px;">-->
+<!--                                &lt;!&ndash; Input số lượng &ndash;&gt;-->
+<!--                                <input type="number" name="quantity" value="1" min="1" class="form-control text-center border-end-0"-->
+<!--                                       style="border-radius: 0.25rem 0 0 0.25rem; height:38px;">-->
+<!--                                &lt;!&ndash; Nút Thêm vào giỏ &ndash;&gt;-->
+<!--                                <button type="submit" class="btn btn-success d-flex align-items-center justify-content-center"-->
+<!--                                        style="border-radius: 0 0.25rem 0.25rem 0; height:38px;">-->
+<!--                                    <i class="bi bi-cart-plus me-1"></i> Thêm-->
+<!--                                </button>-->
+<!--                            </div>-->
+<!--                        </form>-->
+<!--                    </div>-->
   </footer>
 
   <!-- Scroll Top -->

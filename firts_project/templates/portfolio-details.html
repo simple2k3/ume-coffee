@@ -2,99 +2,211 @@
 {% load static %}
 
 {% block title %}{{ product.product_name }} - UME Coffee{% endblock %}
-
 {% block extra_head %}
 <style>
-/* Chỉ CSS riêng cho trang product detail */
-#product-details,
-#suggested-products {
-  position: relative;
-  background: url('{% static "assets/img/background.jpg" %}') no-repeat center center;
-  background-size: cover;
-  padding: 60px 0;
-}
-/* ... CSS khác ... */
+  body {
+    background-color: #fff8f0;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* Tiêu đề danh mục */
+  .category-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4A2C2A;
+    text-align: center;
+    margin: 30px 0;
+  }
+
+  /* Hình sản phẩm */
+  .image-wrapper {
+    width: 100%;
+    aspect-ratio: 1/1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+  }
+
+  .image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .image-wrapper:hover img {
+    transform: scale(1.05);
+  }
+
+  /* Tên sản phẩm */
+  .card-body h5 {
+    color: #4A2C2A;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  /* Loại sản phẩm */
+  .product-type {
+    font-size: 0.85rem;
+    color: #6B4E31;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Nút Xem chi tiết */
+  .btn-detail {
+    background-color: #fff8f0;
+    color: #6B4E31;
+    border: 1px solid #6B4E31;
+    font-weight: 600;
+    height: 38px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-detail:hover {
+    background-color: #6B4E31;
+    color: #fff;
+  }
+
+  /* Nút Thêm vào giỏ */
+  .btn-add-cart {
+    background-color: #6B4E31;
+    color: #fff;
+    font-weight: 600;
+    height: 38px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-add-cart:hover {
+    background-color: #3D2420;
+    color: #fff;
+  }
+
+  /* Hai nút chia đều */
+  .product-card-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .product-card-buttons .w-50 {
+    flex: 1;
+  }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    background: transparent;
+    padding: 0;
+  }
+  .breadcrumb a, .breadcrumb span {
+    color: #6B4E31;
+    font-family: 'Poppins', sans-serif;
+    text-decoration: none;
+  }
+  .breadcrumb a:hover {
+    text-decoration: underline;
+  }
+  .breadcrumb-separator {
+    color: #6B4E31;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="main portfolio-details-page">
-  <section id="product-details" class="portfolio-details section">
-    <div class="container" data-aos="fade-up">
-      <div class="row gy-4">
-        <div class="col-lg-8">
-          <div class="portfolio-details-slider swiper init-swiper">
-            <div class="swiper-wrapper align-items-center">
-              {% if product.image %}
-              <div class="swiper-slide">
-                <img src="{{ product.image }}" alt="{{ product.product_name }}">
-              </div>
-              {% endif %}
-              {% for detail in details %}
-              {% if detail.image %}
-              <div class="swiper-slide">
-                <img src="{{ detail.image }}" alt="Chi tiết ảnh">
-              </div>
-              {% endif %}
-              {% endfor %}
-            </div>
-            <div class="swiper-pagination"></div>
-          </div>
-        </div>
 
-        <div class="col-lg-4">
-          <div class="portfolio-info">
-            <h3>{{ product.product_name }}</h3>
-            <ul>
-              <li><strong>Mã sản phẩm:</strong> {{ product.product_code }}</li>
-              <li><strong>Giá:</strong> {{ product.base_price }} VNĐ</li>
-              <li><strong>Trạng thái:</strong>
-                {% if details.0.is_available %}
-                  <span class="text-success">Còn hàng</span>
+  <section id="product-details" class="portfolio-details section">
+  <div class="container">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-4" style="background: transparent; padding: 0;">
+            {% for crumb in request.breadcrumbs %}
+              <li class="breadcrumb-item {% if forloop.last %}active text-secondary{% endif %}"
+                  {% if forloop.last %}aria-current="page"{% endif %}>
+                {% if crumb.url and not forloop.last %}
+                  <a href="{{ crumb.url }}" class="text-decoration-none" style="color:#6B4E31; font-family: 'Poppins', sans-serif;">
+                    {{ crumb.text }}
+                  </a>
                 {% else %}
-                  <span class="text-danger">Hết hàng</span>
+                  <span style="color:#6B4E31; font-family: 'Poppins', sans-serif;">{{ crumb.text }}</span>
                 {% endif %}
               </li>
-              <li><strong>Ngày cập nhật:</strong> {{ product.update_time|date:"d/m/Y H:i" }}</li>
-            </ul>
-          </div>
-          <div class="portfolio-description mt-3">
-            <h4>Mô tả sản phẩm</h4>
-            {% if details %}
-              {% for detail in details %}
-                {% if detail.description %}
-                  <p>{{ detail.description }}</p>
-                {% endif %}
-              {% endfor %}
-            {% else %}
-              <p>Chưa có mô tả chi tiết cho sản phẩm này.</p>
-            {% endif %}
-          </div>
+              {% if not forloop.last %}
+                <li class="breadcrumb-separator mx-1" style="color:#6B4E31;">/</li>
+              {% endif %}
+            {% endfor %}
+          </ol>
+        </nav>
+    <div class="row gy-4">
+      <div class="col-lg-8 col-md-12 d-flex justify-content-center">
+        <div class="image-wrapper w-100" style="max-width:500px;">
+          {% if product.imageUrl %}
+            <img src="{{ product.imageUrl }}" alt="{{ product.product_name }}" class="img-fluid rounded">
+          {% else %}
+            <img src="{% static 'assets/img/no-image.png' %}" alt="No image" class="img-fluid rounded">
+          {% endif %}
         </div>
       </div>
-    </div>
-  </section>
+      <div class="col-lg-4 col-md-12">
+        <h2>{{ product.product_name }}</h2>
+        <p><strong>Giá:</strong> {{ product.price|floatformat:0 }}₫</p>
+        <p><strong>Mô tả:</strong> {{ product.description|default:"Chưa có mô tả." }}</p>
+           <form action="{% url 'add_to_cart' product.product_code %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-add-cart d-flex align-items-center justify-content-center">
+                  <i class="bi bi-cart-plus me-1"></i> Thêm Giỏ Hàng
+                </button>
+        </form>
+      </div>
 
-  <section id="suggested-products" class="section mt-5">
-    <div class="container">
-      <h3 class="mb-4">Sản phẩm gợi ý</h3>
-      <div class="row gy-4">
-        {% for p in suggested_products %}
-        <div class="col-lg-3 col-md-4 col-6">
-          <div class="card">
-            {% if p.image %}
-              <img src="{{ p.image }}" class="card-img-top" alt="{{ p.product_name }}">
+    </div>
+  </div>
+</section>
+
+<section id="suggested-products" class="section mt-5">
+  <div class="container">
+    <h3 class="mb-4 text-center">Sản phẩm gợi ý</h3>
+    <div class="row g-4 justify-content-center">
+      {% for p in suggested_products %}
+      <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-center">
+        <div class="card shadow-sm border-0 w-100 h-100" style="max-width:280px;">
+          <div class="image-wrapper">
+            {% if p.imageUrl %}
+              <img src="{{ p.imageUrl }}" alt="{{ p.product_name }}">
+            {% else %}
+              <img src="{% static 'assets/img/no-image.png' %}" alt="No image">
             {% endif %}
-            <div class="card-body text-center">
-              <h6 class="card-title">{{ p.product_name }}</h6>
-              <p class="card-text">{{ p.base_price }} VNĐ</p>
-              <a href="{% url 'product_detail' p.product_code %}" class="btn btn-primary btn-sm">Xem chi tiết</a>
+          </div>
+          <div class="card-body text-center">
+            <h5 class="card-title mb-2">{{ p.product_name }}</h5>
+            <p class="text-muted mb-1">Giá: {{ p.price|floatformat:0 }}₫</p>
+            {% if p.product_type %}
+              <p class="product-type mb-2">{{ p.product_type.product_type_name }}</p>
+            {% endif %}
+            <div class="product-card-buttons">
+              <a href="{% url 'product_detail' p.product_code %}" class="btn btn-detail d-flex align-items-center justify-content-center">
+                  <i class="bi bi-eye me-1"></i> Xem chi tiết
+                </a>
+                <form action="{% url 'add_to_cart' p.product_code %}" method="post">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-add-cart d-flex align-items-center justify-content-center">
+                    <i class="bi bi-cart-plus me-1"></i> Thêm
+                  </button>
+                </form>
             </div>
           </div>
         </div>
-        {% endfor %}
       </div>
+      {% empty %}
+      <div class="col-12 text-center text-muted mt-4">
+        Không có sản phẩm gợi ý.
+      </div>
+      {% endfor %}
     </div>
-  </section>
+  </div>
+</section>
 </main>
 {% endblock %}

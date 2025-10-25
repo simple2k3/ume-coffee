@@ -1,4 +1,10 @@
 from django.db import models
+import uuid
+def generate_request_id():
+    return str(uuid.uuid4())
+
+def generate_order_id():
+    return str(uuid.uuid4())
 class StatusMaster(models.Model):
     status_code = models.AutoField(primary_key=True)
     status_name = models.CharField(max_length=100)
@@ -11,7 +17,7 @@ class StatusMaster(models.Model):
 class Categories(models.Model):
     categories_id = models.CharField(max_length=50, primary_key=True)
     categories_name = models.CharField(max_length=100)
-
+    imageUrl = models.URLField(max_length=500, blank=True, null=True)
     def __str__(self):
         return self.categories_name
 
@@ -19,9 +25,9 @@ class Categories(models.Model):
 class ProductMaster(models.Model):
     product_code = models.CharField(max_length=50, primary_key=True)
     product_name = models.CharField(max_length=255)
-    image = models.URLField(max_length=500, blank=True, null=True)
+    imageUrl = models.URLField(max_length=500, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    base_price = models.FloatField()
+    price = models.FloatField(default=0)
     is_active = models.BooleanField(default=True)
     update_by = models.CharField(max_length=100)
     update_time = models.DateTimeField()
@@ -36,28 +42,35 @@ class ProductMaster(models.Model):
 
 class TableMaster(models.Model):
     table_name = models.CharField(max_length=100)
-    status = models.ForeignKey('StatusMaster', on_delete=models.CASCADE)
     qr_code = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
 
     def __str__(self):
         return self.table_name
 
 
-class Orders(models.Model):
-    table = models.ForeignKey(TableMaster, on_delete=models.CASCADE)
-    status = models.ForeignKey(StatusMaster, on_delete=models.CASCADE)
-    total_invoice = models.FloatField()
-    create_at = models.DateTimeField()
-
+class Order(models.Model):
+    partnerCode = models.CharField(max_length=50)
+    requestId = models.CharField(max_length=50, unique=True, default=generate_request_id)
+    amount = models.BigIntegerField()
+    orderId = models.CharField(max_length=200, unique=True, default=generate_order_id)
+    orderInfo = models.CharField(max_length=255, blank=True)
+    redirectUrl = models.URLField()
+    requestType = models.CharField(max_length=50, default='captureWallet')
+    extraData = models.TextField(blank=True)
+    lang = models.CharField(max_length=2, default='vi')
+    signature = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default='pending')
     def __str__(self):
-        return f"Order {self.id}"
+        return f"Order {self.orderId} - {self.status}"
+
 
 
 class OrderDetail(models.Model):
-    order = models.ForeignKey(Orders, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
     product = models.ForeignKey(ProductMaster, on_delete=models.CASCADE)
-    total_amount = models.FloatField()
-    quantity_product = models.IntegerField()
+    totalPrice = models.FloatField(default=0)
+    quantity = models.IntegerField(default=1)
     create_at = models.DateTimeField()
 
     def __str__(self):
