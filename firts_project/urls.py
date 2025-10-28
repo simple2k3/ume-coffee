@@ -23,9 +23,15 @@ urlpatterns = [
 
     #giỏ hàng
     path('cart/', views.cart_view, name='cart'),
-    path('cart/add/<str:product_code>/', views.add_to_cart, name='add_to_cart'),
+    path('cart/add/<str:product_code>/', views.add_to_cart_view, name='add_to_cart_view'),
     path('cart/remove/<str:product_code>/', views.remove_from_cart, name='remove_from_cart'),
+    path('cart/clear/', views.clear_cart, name='clear_cart'),
+    path('cart/update/<str:product_code>/', views.update_quantity_view, name='update_quantity'),
     #thanh toán
+    path('payment/momo/', views.momo_payment, name='momo_payment'),
+    path('payment/momo/return/', views.momo_return, name='momo_return'),
+    path('payment/momo/ipn/', views.momo_ipn, name='momo_ipn'),
+    path("payment/cash/", views.pay_cash_view, name="payment_cash"),
 ]
 
 if settings.DEBUG:

@@ -18,22 +18,24 @@
     margin: 30px 0;
   }
 
-  /* Hình sản phẩm */
+  /* --- KHUNG ẢNH SẢN PHẨM --- */
   .image-wrapper {
     width: 100%;
-    aspect-ratio: 1/1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
+    aspect-ratio: 1 / 1;                /* Khung vuông đồng đều */
     border-radius: 12px;
+    overflow: hidden;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
     transition: transform 0.3s ease;
   }
 
   .image-wrapper img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover;                  /* Cắt ảnh vừa khung, không méo */
     transition: transform 0.3s ease;
   }
 
@@ -41,21 +43,20 @@
     transform: scale(1.05);
   }
 
-  /* Tên sản phẩm */
+  /* --- Tên & thông tin sản phẩm --- */
   .card-body h5 {
     color: #4A2C2A;
     font-weight: 600;
     font-size: 1rem;
   }
 
-  /* Loại sản phẩm */
   .product-type {
     font-size: 0.85rem;
     color: #6B4E31;
     margin-bottom: 0.5rem;
   }
 
-  /* Nút Xem chi tiết */
+  /* --- Nút --- */
   .btn-detail {
     background-color: #fff8f0;
     color: #6B4E31;
@@ -71,7 +72,6 @@
     color: #fff;
   }
 
-  /* Nút Thêm vào giỏ */
   .btn-add-cart {
     background-color: #6B4E31;
     color: #fff;
@@ -83,18 +83,12 @@
 
   .btn-add-cart:hover {
     background-color: #3D2420;
-    color: #fff;
   }
 
-  /* Hai nút chia đều */
   .product-card-buttons {
     display: flex;
     gap: 0.5rem;
     margin-top: 0.5rem;
-  }
-
-  .product-card-buttons .w-50 {
-    flex: 1;
   }
 
   /* Breadcrumb */
@@ -102,14 +96,16 @@
     background: transparent;
     padding: 0;
   }
+
   .breadcrumb a, .breadcrumb span {
     color: #6B4E31;
-    font-family: 'Poppins', sans-serif;
     text-decoration: none;
   }
+
   .breadcrumb a:hover {
     text-decoration: underline;
   }
+
   .breadcrumb-separator {
     color: #6B4E31;
   }
@@ -121,6 +117,7 @@
   <div class="container">
     <h2 class="category-title" data-aos="fade-up">{{ category.categories_name }}</h2>
 
+    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb mb-4">
         {% for crumb in request.breadcrumbs %}
@@ -138,6 +135,7 @@
       </ol>
     </nav>
 
+    <!-- Danh sách sản phẩm -->
     <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
       {% for product in products %}
       <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-center">
@@ -149,20 +147,17 @@
               <img src="{% static 'assets/img/no-image.png' %}" alt="No image">
             {% endif %}
           </div>
+
           <div class="card-body text-center">
             <h5 class="card-title mb-2">{{ product.product_name }}</h5>
             <p class="text-muted mb-1">Giá: {{ product.price|floatformat:0 }}₫</p>
-            {% if product.product_type %}
-              <p class="product-type">{{ product.product_type.product_type_name }}</p>
-            {% endif %}
-
             <div class="product-card-buttons">
-              <a href="{% url 'product_detail' product.product_code %}" class="btn btn-detail d-flex align-items-center justify-content-center">
-                <i class="bi bi-eye me-1"></i> Xem chi tiết
+              <a href="{% url 'product_detail' product.product_code %}" class="btn btn-detail w-50">
+                <i class="bi bi-eye me-1"></i> Xem
               </a>
-              <form action="{% url 'add_to_cart' product.product_code %}" method="post">
+              <form action="{% url 'add_to_cart_view' product.product_code %}" method="post" class="w-50">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-add-cart d-flex align-items-center justify-content-center">
+                <button type="submit" class="btn btn-add-cart w-100">
                   <i class="bi bi-cart-plus me-1"></i> Thêm
                 </button>
               </form>

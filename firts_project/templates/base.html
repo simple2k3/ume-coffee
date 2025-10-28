@@ -274,20 +274,35 @@
       </div>
 
       <!-- Chuông thông báo -->
-      <div class="header-bell position-relative me-3">
-        <a href="#" class="bell-icon text-dark position-relative">
-          <i class="bi bi-bell fs-4"></i>
-          <span class="cart-badge position-absolute top-0 start-100 translate-middle rounded-circle bg-warning text-dark fw-bold">3</span>
-        </a>
-      </div>
+      <div class="header-bell position-relative me-3 dropdown">
+      <a href="#" class="bell-icon text-dark position-relative dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-bell fs-4"></i>
+        {% if notification_count > 0 %}
+          <span class="cart-badge position-absolute top-0 start-100 translate-middle rounded-circle bg-warning text-dark fw-bold">
+            {{ notification_count }}
+          </span>
+        {% endif %}
+      </a>
 
-      <!-- Mạng xã hội -->
-<!--      <div class="header-social-links d-flex">-->
-<!--        <a href="#"><i class="bi bi-twitter-x"></i></a>-->
-<!--        <a href="#"><i class="bi bi-facebook"></i></a>-->
-<!--        <a href="#"><i class="bi bi-instagram"></i></a>-->
-<!--        <a href="#"><i class="bi bi-linkedin"></i></a>-->
-<!--      </div>-->
+      <!-- Danh sách thông báo -->
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" style="width: 300px;">
+      {% if notifications %}
+        {% for n in notifications %}
+          <li class="d-flex justify-content-between align-items-start border-bottom py-2">
+            <div>
+              <strong>{{ n.product_name }}</strong><br>
+              <small>Bàn: {{ n.table_id }}</small><br>
+              <small>Số lượng: {{ n.quantity }}</small><br>
+              <small class="text-muted">{{ n.time }}</small>
+            </div>
+            <span class="badge bg-info text-dark">{{ n.status }}</span>
+          </li>
+        {% endfor %}
+      {% else %}
+        <li class="text-center text-muted py-2">Không có thông báo mới</li>
+      {% endif %}
+    </ul>
+
     </div>
 
   </div>

@@ -56,6 +56,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "first_app.context_processors.categories_processor",
                 "first_app.context_processors.breadcrumbs",
+                "first_app.context_processors.notifications_context",
 
             ],
         },

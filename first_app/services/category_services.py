@@ -27,6 +27,6 @@ class CategoriesService:
     def get_all_categories(limit=None):
         qs = Categories.objects.all()
         if limit is not None:
-            qs = qs[:limit]  # chỉ lấy số lượng giới hạn
+            qs = qs[:limit]
         return qs
 

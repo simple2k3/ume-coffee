@@ -4,57 +4,91 @@
 
     {% block extra_head %}
     <style>
+    body {
+      background-color: #fff8f0;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* --- BỐ CỤC --- */
     .category-list {
-  display: flex;
-  flex-wrap: wrap;       /* Cho phép xuống hàng */
-  gap: 20px;             /* Khoảng cách giữa các danh mục */
-  margin-bottom: 60px;
-}
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+      margin-bottom: 60px;
+    }
 
-.category-link {
-  flex: 1 1 calc(50% - 10px); /* 2 danh mục mỗi hàng */
-  text-decoration: none;
-  color: inherit;
-}
+    /* ✅ 2 danh mục mỗi hàng */
+    .category-link {
+      flex: 1 1 calc(50% - 24px);
+      max-width: 520px; /* tùy chỉnh độ rộng tối đa cho đẹp */
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.3s ease;
+    }
 
-.category-info {
-  background-color: #fff8f0;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
+    /* --- KHUNG DANH MỤC --- */
+    .category-info {
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
 
-.category-info:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-}
+    .category-info:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
 
-.category-info img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: 10px;
-}
+    /* ✅ KHUNG ẢNH CỐ ĐỊNH, ĐỒNG ĐỀU */
+    .image-wrapper {
+      width: 100%;
+      height: 300px; /* cố định chiều cao khung ảnh */
+      background-color: #fff;
+      border-radius: 12px 12px 0 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-.category-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #4A2C2A;
-  margin-bottom: 10px;
-}
+    .image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;  /* giữ nguyên tỉ lệ, không cắt ảnh */
+      transition: transform 0.3s ease;
+    }
 
-.category-desc {
-  font-size: 1rem;
-  color: #6B4E31;
-}
+    .image-wrapper:hover img {
+      transform: scale(1.03);
+    }
 
+    /* --- TIÊU ĐỀ & MÔ TẢ --- */
+    .category-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #4A2C2A;
+      margin: 16px 0 6px;
+    }
+
+    .category-desc {
+      font-size: 1rem;
+      color: #6B4E31;
+      padding: 0 16px 20px;
+    }
+
+    /* --- RESPONSIVE --- */
+    @media (max-width: 992px) {
+      .category-link {
+        flex: 1 1 calc(50% - 20px); /* vẫn 2 danh mục trên tablet */
+      }
+    }
+    @media (max-width: 768px) {
+      .category-link {
+        flex: 1 1 100%; /* 1 danh mục mỗi hàng trên mobile */
+      }
+    }
     </style>
     {% endblock %}
 
@@ -62,8 +96,9 @@
     <main class="main portfolio-page">
       <section id="portfolio" class="portfolio section text-center">
         <div class="container section-title" data-aos="fade-up">
-          <h2>Quảng cáo sản phẩm</h2>
+          <h2>Danh Mục Sản Phẩm</h2>
         </div>
+
         <div class="container mt-4">
           <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-4" style="background: transparent; padding: 0;">
@@ -82,21 +117,24 @@
           </nav>
 
           <div class="category-list">
-  {% for category in product_data|slice:":6" %}  {# Chỉ lấy 6 danh mục #}
-    <a href="{% url 'category_products' category.categories_id %}" class="category-link">
-      <div class="category-info">
-        {% if category.imageUrl %}
-          <img src="{{ category.imageUrl }}" alt="{{ category.category_name }}">
-        {% endif %}
-        <h3 class="category-title">{{ category.category_name }}</h3>
-        <p class="category-desc">
-          Khám phá những sản phẩm nổi bật trong danh mục {{ category.category_name }} của UME Coffee.
-        </p>
-      </div>
-    </a>
-  {% endfor %}
-</div>
-
+            {% for category in product_data|slice:":6" %}
+              <a href="{% url 'category_products' category.categories_id %}" class="category-link">
+                <div class="category-info">
+                  <div class="image-wrapper">
+                    {% if category.imageUrl %}
+                      <img src="{{ category.imageUrl }}" alt="{{ category.category_name }}">
+                    {% else %}
+                      <img src="{% static 'assets/img/no-image.png' %}" alt="No image">
+                    {% endif %}
+                  </div>
+                  <h3 class="category-title">{{ category.category_name }}</h3>
+                  <p class="category-desc">
+                    Khám phá những sản phẩm nổi bật trong danh mục {{ category.category_name }} của UME Coffee.
+                  </p>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
         </div>
       </section>
     </main>

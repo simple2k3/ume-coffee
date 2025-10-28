@@ -13,8 +13,8 @@ class ProductsServices:
                     {
                         'product_code': product.product_code,
                         'product_name': product.product_name,
-                        'image': product.image,
-                        'base_price': product.base_price,
+                        'imageUrl ': product.imageUrl ,
+                        'price': product.price,
                         'description': product.description
                     }
                     for product in category.products.filter(is_active=True)

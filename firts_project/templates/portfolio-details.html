@@ -154,7 +154,7 @@
         <h2>{{ product.product_name }}</h2>
         <p><strong>Giá:</strong> {{ product.price|floatformat:0 }}₫</p>
         <p><strong>Mô tả:</strong> {{ product.description|default:"Chưa có mô tả." }}</p>
-           <form action="{% url 'add_to_cart' product.product_code %}" method="post">
+           <form action="{% url 'add_to_cart_view' product.product_code %}" method="post">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-add-cart d-flex align-items-center justify-content-center">
                   <i class="bi bi-cart-plus me-1"></i> Thêm Giỏ Hàng
@@ -190,7 +190,7 @@
               <a href="{% url 'product_detail' p.product_code %}" class="btn btn-detail d-flex align-items-center justify-content-center">
                   <i class="bi bi-eye me-1"></i> Xem chi tiết
                 </a>
-                <form action="{% url 'add_to_cart' p.product_code %}" method="post">
+                <form action="{% url 'add_to_cart_view' p.product_code %}" method="post">
                   {% csrf_token %}
                   <button type="submit" class="btn btn-add-cart d-flex align-items-center justify-content-center">
                     <i class="bi bi-cart-plus me-1"></i> Thêm

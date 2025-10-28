@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5 text-center">
+  <h2>{{ message }}</h2>
+  <p>Mã đơn hàng: <strong>{{ order.orderId }}</strong></p>
+  <p>Tổng tiền: <strong>{{ order.amount }} VND</strong></p>
+  <a href="/" class="btn btn-primary mt-3">Về trang chủ</a>
+</div>
+{% endblock %}

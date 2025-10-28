@@ -60,9 +60,11 @@ class Order(models.Model):
     lang = models.CharField(max_length=2, default='vi')
     signature = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, default='pending')
+    status = models.ForeignKey(StatusMaster,on_delete=models.SET_NULL,null=True,blank=True,related_name='orders'
+    )
     def __str__(self):
         return f"Order {self.orderId} - {self.status}"
+    table = models.ForeignKey(TableMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
 
 
 
