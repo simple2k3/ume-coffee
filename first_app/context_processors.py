@@ -15,8 +15,8 @@ def breadcrumbs(request):
         'breadcrumbs': getattr(request, 'breadcrumbs', [])
     }
 def notifications_context(request):
-    notifications = NotificationService.get_recent_notifications(limit=5)
+    notifications = NotificationService.get_recent_notifications(request)
     return {
         'notifications': notifications,
-        'notification_count': len(notifications)
+        'notification_count': len(notifications),
     }

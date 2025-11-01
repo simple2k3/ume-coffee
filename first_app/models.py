@@ -49,6 +49,8 @@ class TableMaster(models.Model):
 
 
 class Order(models.Model):
+    id=models.AutoField(primary_key=True)
+    order_id = models.CharField(max_length=100, default=generate_order_id)
     partnerCode = models.CharField(max_length=50)
     requestId = models.CharField(max_length=50, unique=True, default=generate_request_id)
     amount = models.BigIntegerField()
@@ -60,7 +62,9 @@ class Order(models.Model):
     lang = models.CharField(max_length=2, default='vi')
     signature = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.ForeignKey(StatusMaster,on_delete=models.SET_NULL,null=True,blank=True,related_name='orders'
+    status = models.ForeignKey(StatusMaster,on_delete=models.SET_NULL,null=True,blank=True,related_name='orders')
+    qr_code = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
+    customer = models.ForeignKey('Customer',on_delete=models.SET_NULL,null=True,blank=True,related_name='orders'
     )
     def __str__(self):
         return f"Order {self.orderId} - {self.status}"
@@ -77,3 +81,14 @@ class OrderDetail(models.Model):
 
     def __str__(self):
         return f"OrderDetail {self.id} - {self.product.product_name}"
+
+
+class Customer(models.Model):
+    customer_name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=15,unique=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
+    note = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.customer_name} ({self.phone})"

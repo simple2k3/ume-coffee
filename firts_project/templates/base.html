@@ -236,7 +236,7 @@
     <!-- Logo -->
     <a href="{% url 'index_html' %}" class="logo d-flex align-items-center me-4">
       <img src="{% static 'assets/img/logo.jpg' %}" alt="UME Coffee">
-      <h1 class="sitename ms-2">UME COFFEE</h1>
+      <h5 class="sitename ms-2">UME COFFEE</h5>
     </a>
 
     <!-- Menu chính -->
@@ -285,26 +285,27 @@
       </a>
 
       <!-- Danh sách thông báo -->
-      <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" style="width: 300px;">
-      {% if notifications %}
-        {% for n in notifications %}
-          <li class="d-flex justify-content-between align-items-start border-bottom py-2">
-            <div>
-              <strong>{{ n.product_name }}</strong><br>
-              <small>Bàn: {{ n.table_id }}</small><br>
-              <small>Số lượng: {{ n.quantity }}</small><br>
-              <small class="text-muted">{{ n.time }}</small>
-            </div>
-            <span class="badge bg-info text-dark">{{ n.status }}</span>
-          </li>
-        {% endfor %}
-      {% else %}
-        <li class="text-center text-muted py-2">Không có thông báo mới</li>
-      {% endif %}
-    </ul>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" style="width: 320px;">
+          {% if notifications %}
+            {% for n in notifications %}
+              <li class="border-bottom py-2">
+                  <a href="{% url 'order_detail' n.order_id %}" class="text-decoration-none text-dark d-block">
+                      <div>
+                          <strong> Mã đơn:</strong> {{ n.order_id }}<br>
+                          <strong> Khách hàng:</strong> {{ n.customer_name }}<br>
+                          <strong> Tổng tiền:</strong> {{ n.amount|floatformat:0 }}₫<br>
+                          <strong> Trạng thái:</strong> <span class="badge bg-info text-dark">{{ n.status }}</span>
+                      </div>
+                  </a>
+
+              </li>
+            {% endfor %}
+          {% else %}
+            <li class="text-center text-muted py-2">Không có đơn hàng trong phiên</li>
+          {% endif %}
+        </ul>
 
     </div>
-
   </div>
 </header>
 <!-- End Header -->

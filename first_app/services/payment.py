@@ -27,7 +27,7 @@ from django.utils import timezone
 from first_app.models import Order
 
 from first_app.services.orderdetail_services import NotificationService
-
+from first_app.services.sendemail import send_order_email
 from first_app.models import OrderDetail
 
 
@@ -40,10 +40,10 @@ class MomoService:
     SECRET_KEY = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
     REQUEST_TYPE = "captureWallet"
 
-    BASE_URL = "https://a31b5d32aa3d.ngrok-free.app"
+    BASE_URL = "hhttps://156a95bd09af.ngrok-free.app"
     REDIRECT_URL = f"{BASE_URL}/payment/momo/return/"
     IPN_URL = f"{BASE_URL}/payment/momo/ipn/"
-
+    #tạo yêu cầu tới momo
     @staticmethod
     def create_payment(amount: int, order_info="Thanh toán UME Coffee", extra_data=""):
         request_id = str(uuid.uuid4())
@@ -86,30 +86,25 @@ class MomoService:
             return {"error": str(e)}
 
     @staticmethod
-    def create_order_from_cart(request):
+    def create_order_from_cart(request, order_info, customer):
         cart = request.session.get("cart", {})
         table_id = request.session.get('table_id')
         table = TableMaster.objects.filter(id=table_id).first() if table_id else None
 
-        # --- Kiểm tra điều kiện ---
         if not isinstance(cart, dict) or not cart:
             return JsonResponse({"error": "Giỏ hàng trống hoặc sai định dạng"})
-        if not table_id:
-            return JsonResponse({"error": "Không có thông tin bàn."})
 
-        # --- Tính tổng tiền ---
         total = sum(
             item["price"] * item["quantity"]
             for item in cart.values()
             if isinstance(item, dict) and "price" in item and "quantity" in item
         )
+
         if total == 0:
             return JsonResponse({"error": "Không có sản phẩm hợp lệ trong giỏ hàng"})
 
-        order_info = f"Thanh toán bàn {table_id}"
-
         # --- Gọi API MoMo ---
-        momo_result = MomoService.create_payment(total)
+        momo_result = MomoService.create_payment(total, order_info)
         pay_url = momo_result.get("payUrl")
         if not pay_url:
             return JsonResponse({"error": momo_result})
@@ -132,7 +127,11 @@ class MomoService:
             signature=momo_result.get("signature", ""),
             status=pending_status,
             table=table,
+            customer=customer,
         )
+        #gửi email cho người dùng
+        if customer and customer.email:
+            send_order_email(customer.email, order)
 
         # --- Tạo OrderDetail ---
         for code, item in cart.items():
@@ -148,39 +147,25 @@ class MomoService:
             except ProductMaster.DoesNotExist:
                 continue
 
-        # --- Lưu orderId vào session ---
         request.session["orderId"] = order.orderId
-
-        # --- Trả về URL để redirect ---
         return redirect(pay_url)
 
-
-
-
     @staticmethod
-    def pay_cash(request):
+    def pay_cash(request, order_info, customer):
         cart = request.session.get("cart", {})
         table_id = request.session.get("table_id")
         table = TableMaster.objects.filter(id=table_id).first() if table_id else None
 
         if not isinstance(cart, dict) or not cart:
             return JsonResponse({"error": "Giỏ hàng trống hoặc sai định dạng"})
-        if not table_id:
-            return JsonResponse({"error": "Không có thông tin bàn."})
 
         total = sum(
             item["price"] * item["quantity"]
             for item in cart.values()
             if isinstance(item, dict) and "price" in item and "quantity" in item
         )
-        if total == 0:
-            return JsonResponse({"error": "Không có sản phẩm hợp lệ trong giỏ hàng"})
 
-        order_info = f"Thanh toán tiền mặt bàn {table_id}"
         pending_status = StatusMaster.objects.filter(status_code=1).first()
-        if not pending_status:
-            return JsonResponse({"error": "Không tìm thấy trạng thái có mã 1 (Đang Xử Lý)"})
-        # --- Tạo Order ---
         order = Order.objects.create(
             partnerCode="Tiền Mặt",
             requestId=str(uuid.uuid4()),
@@ -194,9 +179,9 @@ class MomoService:
             signature="",
             status=pending_status,
             table=table,
+            customer=customer,
         )
 
-        # --- Tạo OrderDetail ---
         for code, item in cart.items():
             try:
                 product = ProductMaster.objects.get(product_code=code)
@@ -209,13 +194,7 @@ class MomoService:
                 )
             except ProductMaster.DoesNotExist:
                 continue
-
-        # --- Xóa giỏ hàng ---
+                #xóa khỏi session khi tạo đơn hàng
         request.session["cart"] = {}
         request.session.modified = True
-
-        # --- Trả về trang thông báo ---
-        return render(request, "success.html", {
-            "order": order,
-            "message": f"Nhân Viên Sẽ Đên Thu Tiền Bàn {table_id} Vui Lòng Đợi Ít Phút",
-        })
+        return order

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chi tiết đơn hàng</title>
+  <style>
+    body { font-family: sans-serif; margin: 30px; background: #f5f7fa; }
+    .container { display: flex; gap: 30px; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+    th { background: #007bff; color: white; }
+    h2 { color: #007bff; }
+  </style>
+</head>
+<body>
+  <h2> Chi tiết đơn hàng #{{ order.id }}</h2>
+  <div class="container">
+    <div class="card" style="flex: 2;">
+      <h3>Danh sách sản phẩm</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Tên sản phẩm</th>
+            <th>Số lượng</th>
+            <th>Giá</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for detail in order_details %}
+          <tr>
+            <td>{{ detail.product.product_name }}</td>
+            <td>{{ detail.quantity }}</td>
+            <td>{{ detail.totalPrice|floatformat:0 }}₫</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3">Không có sản phẩm.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card" style="flex: 1;">
+      <h3>Thông tin khách hàng</h3>
+      <p><b>Tên:</b> {{ order.customer.customer_name }}</p>
+      <p><b>SĐT:</b> {{ order.customer.phone }}</p>
+      <p><b>Địa chỉ:</b> {{ order.customer.address }}</p>
+      <p><b>Trạng thái:</b> {{ order.status }}</p>
+      <p><b>Tổng tiền:</b> {{ order.amount|floatformat:0 }}₫</p>
+    </div>
+  </div>
+</body>
+</html>

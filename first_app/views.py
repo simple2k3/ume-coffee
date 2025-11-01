@@ -26,6 +26,10 @@ from first_app.services.orderdetail_services import NotificationService
 
 from first_app.models import OrderDetail
 
+from first_app.services.deliveryorder import DeliveryService
+from first_app.services.sendemail import send_order_email
+from first_app.models import Customer
+
 
 #trang chủ
 def index(request):
@@ -76,6 +80,15 @@ def product_detail(request, product_code):
 def print_qr(request, table_id):
     buffer = TableServices.generate_qr_for_table(table_id, request)
     return HttpResponse(buffer, content_type="image/png")
+
+def order_detail_qr(request, order_id):
+    # Lấy order theo orderId (CharField)
+    order = get_object_or_404(Order, orderId=order_id)
+    order_details = order.orderdetail_set.all()
+    return render(request, 'orderdetail.html', {
+        'order': order,
+        'order_details': order_details
+    })
 
 def table_order(request, table_id):
     request.session['table_id'] = table_id
@@ -164,19 +177,10 @@ def clear_cart(request):
     return redirect('cart_view')
 
 #orderdetail
-
 def get_notifications(request):
-    table_id = request.session.get("table_id", "Không rõ bàn")
-    notifications = NotificationService.get_recent_notifications(limit=5)
-
-    # Gắn thêm thông tin bàn cho từng thông báo
-    for n in notifications:
-        n["table_id"] = table_id
-
+    notifications = NotificationService.get_recent_notifications(request)
     return JsonResponse({'notifications': notifications})
-
 #payment
-
 def momo_payment(request):
     return MomoService.create_order_from_cart(request)
 
@@ -192,14 +196,26 @@ def momo_return(request):
     if order_id:
         try:
             order = Order.objects.get(orderId=order_id)
-            order.status = "paid" if result_code == "0" else "failed"
-            order.save()
+
+            if result_code == "0":
+                paid_status = StatusMaster.objects.filter(status_code=2).first()
+                if paid_status:
+                    order.status = paid_status
+                    order.save()
+                    messages.success(request, "💰 Thanh toán thành công!")
+            else:
+
+                failed_status = StatusMaster.objects.filter(status_code=3).first()
+                if failed_status:
+                    order.status = failed_status
+                    order.save()
+                messages.warning(request, f"⚠️ Thanh toán thất bại hoặc bị hủy ({request.GET.get('message')})")
+
         except Order.DoesNotExist:
-            pass
+            messages.error(request, "Không tìm thấy đơn hàng.")
 
-    msg = "Thanh toán thành công!" if result_code == "0" else f"Thanh toán thất bại hoặc bị hủy ({request.GET.get('message')})"
-    return JsonResponse({"message": msg, "data": request.GET})
-
+    # 👉 Sau khi xử lý xong, quay lại trang chủ (index)
+    return redirect("index")
 @csrf_exempt
 def momo_ipn(request):
     #MoMo gửi POST JSON khi thanh toán hoàn tất (IPN callback).
@@ -209,7 +225,60 @@ def momo_ipn(request):
         return JsonResponse({"message": "IPN received successfully"})
     return JsonResponse({"message": "Invalid request"}, status=400)
 
+#lấy thông tin hiện lên form
+def delivery_info(request):
+    products, grand_total = DeliveryService.get_delivery_page(request.session)
+    context = {
+        'products': products,
+        'grand_total': grand_total,
+    }
+
+    return render(request, 'infororder.html', context)
 
 
+def place_order(request):
+    if request.method == "POST":
+        name = request.POST.get("customer_name")
+        phone = request.POST.get("phone")
+        address = request.POST.get("address")
+        email = request.POST.get("email")
+        note = request.POST.get("note")
+        payment_method = request.POST.get("payment_method")
+        order_type = request.POST.get("order_type")
 
+        # --- Lưu hoặc tạo Customer ---
+        customer, created = Customer.objects.get_or_create(
+            phone=phone,
+            defaults={
+                "customer_name": name,
+                "email": email,
+                "address": address,
+                "note": note,
+            }
+        )
+        # Nếu khách hàng đã tồn tại -> cập nhật lại thông tin (để tránh thông tin cũ)
+        if not created:
+            customer.customer_name = name
+            customer.email = email
+            customer.address = address
+            customer.note = note
+            customer.save()
+
+        if order_type == "pickup":
+            order_info = f"Nhận tại cửa hàng"
+        else:
+            order_info = f"Đặt hàng giao tận nơi"
+
+        # --- Gọi phương thức thanh toán tương ứng ---
+        if payment_method == "COD":
+            order = MomoService.pay_cash(request, order_info, customer)
+        elif payment_method == "MOMO":
+            order = MomoService.create_order_from_cart(request, order_info, customer)
+        else:
+            return JsonResponse({"error": "Phương thức thanh toán không hợp lệ."})
+
+        if email and order:
+            send_order_email(email, order)
+
+    return redirect("delivery_info")
 

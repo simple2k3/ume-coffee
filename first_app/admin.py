@@ -17,6 +17,8 @@ from first_app.models import Order
 
 from first_app.models import OrderDetail
 
+from first_app.models import Customer
+
 NGROK_URL = config('NGROK_URL')
 
 
@@ -47,11 +49,49 @@ class CategoriesAdmin(admin.ModelAdmin):
 class ProductMasterAdmin(admin.ModelAdmin):
     list_display = ('product_code', 'product_name', 'description', 'price', 'is_active', 'update_by', 'update_time')
 
+class OrderDetailInline(admin.TabularInline):
+    model = OrderDetail
+    extra = 0
+    can_delete = False
+    readonly_fields = ('product','quantity','totalPrice', 'create_at','customer_name','customer_phone','customer_address',)
+    fields = ('product','quantity','totalPrice','create_at','customer_name','customer_phone','customer_address',)
+    verbose_name = "Chi tiết sản phẩm"
+    verbose_name_plural = "Danh sách sản phẩm trong đơn hàng"
+
+    def customer_name(self, obj):
+        return obj.order.customer.customer_name if obj.order and obj.order.customer else "-"
+    customer_name.short_description = "Tên khách hàng"
+
+    def customer_phone(self, obj):
+        return obj.order.customer.phone if obj.order and obj.order.customer else "-"
+    customer_phone.short_description = "SĐT"
+
+    def customer_address(self, obj):
+        return obj.order.customer.address if obj.order and obj.order.customer else "-"
+    customer_address.short_description = "Địa chỉ"
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('partnerCode', 'amount', 'orderInfo', 'created_at', 'status', 'table')
-    actions = ['updatestatus', 'destroyorder']
-    def has_add_permission(self, request):
+    list_display = ('id', 'orderId', 'partnerCode', 'amount', 'orderInfo', 'created_at', 'status', 'table', 'customer', 'qr_code')
+    actions = ['updatestatus', 'destroyorder', 'print_qr_action']
+    inlines = [OrderDetailInline]
+    change_form_template = "admin/first_app/order/change_form.html"
+
+    def print_qr_action(self, request, queryset):
+        if not queryset.exists():
+            self.message_user(request, " Chưa chọn đơn hàng nào.")
+            return
+        for order in queryset:
+            url = f"{NGROK_URL}/order-detail/{order.orderId}/"
+            buffer = TableServices.generate_qr_for_order(url)
+            file_name = f'order_{order.id}.png'
+            order.qr_code.save(file_name, ContentFile(buffer.getvalue()), save=True)
+        self.message_user(request, f"Đã tạo mã QR cho {queryset.count()} đơn hàng.")
+
+    print_qr_action.short_description = " In QR cho đơn hàng đã chọn"
+    def get_fieldsets(self, request, obj=None):
+        return []
+    def has_change_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):
         return False
@@ -101,10 +141,11 @@ class OrderAdmin(admin.ModelAdmin):
         else:
             self.message_user(request,
                               f"Đã hủy {updated} đơn hàng")
-@admin.register(OrderDetail)
-class OrderDetailAdmin(admin.ModelAdmin):
-    list_display = ('order', 'product', 'totalPrice', 'quantity', 'create_at')
 
 @admin.register(StatusMaster)
 class StatusMasterAdmin(admin.ModelAdmin):
     list_display = ('status_code', 'status_name', 'update_by', 'update_time')
+
+@admin.register(Customer)
+class CustomerMasterAdmin(admin.ModelAdmin):
+    list_display = ('customer_name', 'phone', 'address')

@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thông tin giao hàng{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="text-center mb-4">Thông tin giao hàng</h2>
+
+  <!-- Form bao cả 2 cột để tất cả input đều gửi lên cùng lúc -->
+<form method="post" action="{% url 'place_order' %}" class="row g-3">
+    {% csrf_token %}
+
+    <!-- CỘT TRÁI: FORM THÔNG TIN KHÁCH -->
+    <div class="col-md-6">
+      <div class="p-4 rounded shadow-sm bg-white">
+        <div class="mb-3">
+          <label for="customer_name" class="form-label">Họ và tên</label>
+          <input type="text" id="customer_name" name="customer_name" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="phone" class="form-label">Số điện thoại</label>
+          <input type="text" id="phone" name="phone" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="address" class="form-label">Địa chỉ</label>
+          <input type="text" id="address" name="address" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="email" class="form-label">email</label>
+          <input type="text" id="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="note" class="form-label">Ghi chú</label>
+          <textarea id="note" name="note" rows="2" class="form-control"></textarea>
+        </div>
+
+       <div class="mb-3">
+          <label class="form-label">Hình thức nhận hàng</label>
+           <div>
+               <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="order_type" id="delivery" value="delivery" checked>
+            <label class="form-check-label" for="delivery">Giao tận nơi</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="order_type" id="pickup" value="pickup">
+            <label class="form-check-label" for="pickup">Nhận tại cửa hàng</label>
+          </div>
+           </div>
+
+        </div>
+          <div class="text-center mt-4">
+          <button type="submit" class="btn btn-dark px-4 py-2">
+            <i class="bi bi-check-circle me-1"></i> Xác nhận đặt hàng
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CỘT PHẢI: THÔNG TIN ĐƠN HÀNG + PHƯƠNG THỨC THANH TOÁN -->
+    <div class="col-md-6">
+      <div class="p-4 rounded shadow-sm bg-white">
+        <h5 class="mb-3">Đơn hàng của bạn</h5>
+
+        {% if products %}
+          <ul class="list-group mb-3">
+            {% for product in products %}
+              <li class="list-group-item d-flex align-items-center">
+                <img src="{{ product.imageUrl }}" alt="{{ product.product_name }}"
+                     class="me-3 rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                <div class="flex-grow-1">
+                  <strong>{{ product.product_name }}</strong><br>
+                  <small>Số lượng: {{ product.quantity }}</small>
+                </div>
+                <span class="text-end">{{ product.total_price|floatformat:0 }}₫</span>
+              </li>
+            {% endfor %}
+          </ul>
+
+          <div class="d-flex justify-content-between border-top pt-3 mb-3">
+            <strong>Tổng cộng:</strong>
+            <strong id="grand-total">{{ grand_total|floatformat:0 }}₫</strong>
+          </div>
+
+          <!-- PHƯƠNG THỨC THANH TOÁN (bắt buộc nằm trong cùng form) -->
+          <div class="mb-3">
+            <label class="form-label">Phương thức thanh toán</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked>
+              <label class="form-check-label" for="cod">
+                <i class="bi bi-cash-coin"></i> Thanh toán khi nhận hàng (COD)
+              </label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="radio" name="payment_method" id="momo" value="MOMO">
+              <label class="form-check-label" for="momo">
+                <i class="bi bi-phone"></i> Thanh toán qua MoMo
+              </label>
+            </div>
+          </div>
+
+        {% else %}
+          <p class="text-muted">Giỏ hàng trống.</p>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

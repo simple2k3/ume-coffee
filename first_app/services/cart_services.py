@@ -13,7 +13,7 @@ class CartService:
             # Nếu chưa có thì thêm mới
             cart[product_code] = {
                 'name': name,
-                'price': int(price),  # đảm bảo price là số nguyên
+                'price': int(price),
                 'quantity': quantity,
                 'imageUrl': imageUrl
             }

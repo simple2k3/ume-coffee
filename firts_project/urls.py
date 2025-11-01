@@ -5,6 +5,7 @@ from first_app import views
 from django.conf import settings
 from django.conf.urls.static import static
 
+from first_app.services.payment import MomoService
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -32,6 +33,13 @@ urlpatterns = [
     path('payment/momo/return/', views.momo_return, name='momo_return'),
     path('payment/momo/ipn/', views.momo_ipn, name='momo_ipn'),
     path("payment/cash/", views.pay_cash_view, name="payment_cash"),
+
+    path('delivery-info/', views.delivery_info, name='delivery_info'),
+    path("place-order/", views.place_order, name="place_order"),
+
+    path('order-detail/<str:order_id>/', views.order_detail_qr, name='order_detail'),
+
+
 ]
 
 if settings.DEBUG:
