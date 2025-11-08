@@ -10,7 +10,7 @@ class CategoriesService:
         return product
 
     @staticmethod
-    def get_suggested_products(product):
+    def get_suggested_products(product):# sản phẩm gợi ý
         if not product.category:
             return ProductMaster.objects.none()
         return ProductMaster.objects.filter(
@@ -19,12 +19,12 @@ class CategoriesService:
         ).exclude(product_code=product.product_code)[:4]
 
     @staticmethod
-    def get_products_by_category(category_id):
+    def get_products_by_category(category_id): # lấy sản tất cả sản phẩm theo danh mục
         category = get_object_or_404(Categories, categories_id=category_id)
         products = ProductMaster.objects.filter(category=category, is_active=True)
         return category, products
     @staticmethod
-    def get_all_categories(limit=None):
+    def get_all_categories(limit=None):#lấy danh mục sản phẩm có thể chỉnh sửa số lượng hiện thay none=
         qs = Categories.objects.all()
         if limit is not None:
             qs = qs[:limit]

@@ -1,4 +1,7 @@
+import hashlib
+import hmac
 import json
+import re
 from datetime import timezone
 
 from django.http import JsonResponse, HttpResponse
@@ -17,7 +20,8 @@ from first_app.models import TableMaster
 from first_app.models import StatusMaster
 from django.contrib import messages
 from django.utils import timezone
-
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from first_app.services.payment import MomoService
 
 from first_app.models import Order
@@ -77,18 +81,20 @@ def product_detail(request, product_code):
     })
 
 #table
-def print_qr(request, table_id):
+def print_qr(request, table_id): #in QR bàn
     buffer = TableServices.generate_qr_for_table(table_id, request)
     return HttpResponse(buffer, content_type="image/png")
 
-def order_detail_qr(request, order_id):
-    # Lấy order theo orderId (CharField)
+def order_detail_qr(request, order_id): #in QR cho chi tiết sản phẩm
+    # Lấy order theo orderId
     order = get_object_or_404(Order, orderId=order_id)
     order_details = order.orderdetail_set.all()
     return render(request, 'orderdetail.html', {
         'order': order,
-        'order_details': order_details
+        'order_details': order_details,
+
     })
+
 
 def table_order(request, table_id):
     request.session['table_id'] = table_id
@@ -116,7 +122,6 @@ def category_products(request, category_id):
         'table_id': table_id
     })
 
-#order
 
 #giỏ hàng
 def cart_view(request):
@@ -132,7 +137,6 @@ def cart_view(request):
             'total_price': item.get('price', 0) * item.get('quantity', 1),
             'imageUrl': item.get('imageUrl')
         })
-
     return render(request, 'cart.html', {
         'products': products_list,
         'total_price': total_price,
@@ -159,7 +163,6 @@ def add_to_cart_view(request, product_code):
         imageUrl=product.imageUrl,
         quantity=1
     )
-
     messages.success(request, f"Đã thêm {product.product_name} vào giỏ hàng.")
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
@@ -177,7 +180,7 @@ def clear_cart(request):
     return redirect('cart_view')
 
 #orderdetail
-def get_notifications(request):
+def get_notifications(request): #lấy thông tin hiện detail lên thông báo
     notifications = NotificationService.get_recent_notifications(request)
     return JsonResponse({'notifications': notifications})
 #payment
@@ -192,7 +195,6 @@ def pay_cash_view(request):
 def momo_return(request):
     result_code = request.GET.get("resultCode")
     order_id = request.session.get("orderId")
-
     if order_id:
         try:
             order = Order.objects.get(orderId=order_id)
@@ -218,12 +220,53 @@ def momo_return(request):
     return redirect("index")
 @csrf_exempt
 def momo_ipn(request):
-    #MoMo gửi POST JSON khi thanh toán hoàn tất (IPN callback).
-    if request.method == "POST":
-        data = json.loads(request.body)
-        print(" IPN CALLBACK:", data)
-        return JsonResponse({"message": "IPN received successfully"})
-    return JsonResponse({"message": "Invalid request"}, status=400)
+    if request.method != "POST":
+        return JsonResponse({"message": "Invalid request method"}, status=405)
+
+    data = json.loads(request.body.decode('utf-8'))
+    print(" IPN nhận từ MoMo:", data)
+
+    order_id = data.get("orderId")
+    result_code = data.get("resultCode")
+    amount = data.get("amount")
+
+    # Tạo chuỗi để xác minh chữ ký
+    raw_signature = (
+        f"accessKey={MomoService.ACCESS_KEY}&amount={amount}&extraData={data.get('extraData','')}"
+        f"&message={data.get('message','')}&orderId={order_id}&orderInfo={data.get('orderInfo','')}"
+        f"&orderType={data.get('orderType','')}&partnerCode={data.get('partnerCode','')}"
+        f"&payType={data.get('payType','')}&requestId={data.get('requestId','')}"
+        f"&responseTime={data.get('responseTime','')}&resultCode={result_code}"
+        f"&transId={data.get('transId','')}"
+    )
+
+    generated_signature = hmac.new(
+        MomoService.SECRET_KEY.encode('utf-8'),
+        raw_signature.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    if generated_signature != data.get("signature"):
+        return JsonResponse({"message": "Invalid signature"}, status=400)
+    try:
+        order = Order.objects.get(orderId=order_id)
+    except Order.DoesNotExist:
+        return JsonResponse({"message": "Order not found"}, status=404)
+    # Nếu thanh toán thành công
+    if result_code == 0:
+        success_status = StatusMaster.objects.filter(status_code=2).first()
+        order.status = success_status
+        order.save()
+        # --- Gửi email tại đây ---
+        customer = order.customer
+        if customer and customer.email:
+            send_order_email(customer.email, order)
+
+        return JsonResponse({"message": "Payment success", "resultCode": 0})
+    else:
+        failed_status = StatusMaster.objects.filter(status_code=3).first()  # 3 = Thanh toán thất bại
+        order.status = failed_status
+        order.save()
+        return JsonResponse({"message": "Payment failed", "resultCode": result_code})
 
 #lấy thông tin hiện lên form
 def delivery_info(request):
@@ -232,7 +275,6 @@ def delivery_info(request):
         'products': products,
         'grand_total': grand_total,
     }
-
     return render(request, 'infororder.html', context)
 
 
@@ -245,7 +287,15 @@ def place_order(request):
         note = request.POST.get("note")
         payment_method = request.POST.get("payment_method")
         order_type = request.POST.get("order_type")
+        # --- Kiểm tra số điện thoại ---
+        if not re.match(r"^0[0-9]{9,10}$", phone):
+            return JsonResponse({"error": "Số điện thoại không hợp lệ."}, status=400)
 
+        # --- Kiểm tra email ---
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({"error": "Email không hợp lệ."}, status=400)
         # --- Lưu hoặc tạo Customer ---
         customer, created = Customer.objects.get_or_create(
             phone=phone,
@@ -256,7 +306,7 @@ def place_order(request):
                 "note": note,
             }
         )
-        # Nếu khách hàng đã tồn tại -> cập nhật lại thông tin (để tránh thông tin cũ)
+        # Nếu khách hàng đã tồn tại -> cập nhật lại thông tin
         if not created:
             customer.customer_name = name
             customer.email = email
@@ -272,8 +322,14 @@ def place_order(request):
         # --- Gọi phương thức thanh toán tương ứng ---
         if payment_method == "COD":
             order = MomoService.pay_cash(request, order_info, customer)
+            if email and order:
+                send_order_email(email, order)
+            return redirect("delivery_info")
+
         elif payment_method == "MOMO":
-            order = MomoService.create_order_from_cart(request, order_info, customer)
+           #return luôn redirect
+            return MomoService.create_order_from_cart(request, order_info, customer)
+
         else:
             return JsonResponse({"error": "Phương thức thanh toán không hợp lệ."})
 
@@ -281,4 +337,3 @@ def place_order(request):
             send_order_email(email, order)
 
     return redirect("delivery_info")
-

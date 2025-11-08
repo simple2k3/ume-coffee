@@ -1,11 +1,10 @@
 class CartService:
     @staticmethod
-    def add_to_cart(session, product_code, name, price, imageUrl, quantity=1):
+    def add_to_cart(session, product_code, name, price, imageUrl, quantity=1):# thêm sản phẩm vào giỏ hàng
         if quantity <= 0:
             return
         # Lấy giỏ hàng hiện tại
         cart = session.get('cart', {})
-
         # Nếu sản phẩm đã có trong giỏ hàng thì tăng số lượng
         if product_code in cart:
             cart[product_code]['quantity'] += quantity
@@ -40,7 +39,7 @@ class CartService:
         session.modified = True
 
     @staticmethod
-    def get_cart(session):
+    def get_cart(session): # lấy thông tin sản phẩm trong session hiện lên giỏ hàng
         cart = session.get('cart', {})
         total_price = sum(
             int(item.get('price', 0)) * int(item.get('quantity', 0))

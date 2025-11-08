@@ -1,52 +1,149 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Chi tiết đơn hàng</title>
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
   <style>
-    body { font-family: sans-serif; margin: 30px; background: #f5f7fa; }
-    .container { display: flex; gap: 30px; }
-    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
-    th { background: #007bff; color: white; }
-    h2 { color: #007bff; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f3eee7;
+      margin: 0;
+      padding: 30px;
+      color: #3b2f2f;
+    }
+
+    .wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      color: #8B4513; /* nâu đậm */
+      margin-bottom: 20px;
+      text-align: left;
+      padding-left: 10px;
+    }
+
+    .container {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: #fffaf3;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(139, 69, 19, 0.15);
+      flex: 1;
+      min-width: 300px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 1px solid #e0d4c2;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(139, 69, 19, 0.25);
+    }
+
+    h3 {
+      color: #8B4513;
+      border-bottom: 2px solid #A0522D;
+      padding-bottom: 5px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .info p {
+      margin: 8px 0;
+      color: #4b3b2a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #e6d8c4;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    th {
+      background: #A0522D;
+      color: #fff;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.9em;
+    }
+
+    tr:hover td {
+      background-color: #f9f3ec;
+    }
+
+    .total {
+      text-align: right;
+      font-weight: bold;
+      color: #8B4513;
+      font-size: 1.2em;
+      margin-top: 15px;
+    }
   </style>
-</head>
-<body>
-  <h2> Chi tiết đơn hàng #{{ order.id }}</h2>
-  <div class="container">
-    <div class="card" style="flex: 2;">
-      <h3>Danh sách sản phẩm</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Tên sản phẩm</th>
-            <th>Số lượng</th>
-            <th>Giá</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for detail in order_details %}
-          <tr>
-            <td>{{ detail.product.product_name }}</td>
-            <td>{{ detail.quantity }}</td>
-            <td>{{ detail.totalPrice|floatformat:0 }}₫</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="3">Không có sản phẩm.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <div class="card" style="flex: 1;">
-      <h3>Thông tin khách hàng</h3>
-      <p><b>Tên:</b> {{ order.customer.customer_name }}</p>
-      <p><b>SĐT:</b> {{ order.customer.phone }}</p>
-      <p><b>Địa chỉ:</b> {{ order.customer.address }}</p>
-      <p><b>Trạng thái:</b> {{ order.status }}</p>
-      <p><b>Tổng tiền:</b> {{ order.amount|floatformat:0 }}₫</p>
+
+  <div class="wrapper">
+    <h2>Chi tiết đơn hàng #{{ order.id }}</h2>
+
+    <div class="container">
+      <!-- Thông tin khách hàng -->
+      <div class="card">
+        <h3>Thông tin khách hàng</h3>
+        <div class="info">
+          <p><strong>Họ tên:</strong> {{ order.customer.customer_name }}</p>
+          <p><strong>Số điện thoại:</strong> {{ order.customer.phone }}</p>
+          <p><strong>Email:</strong> {{ order.customer.email }}</p>
+          <p><strong>Địa chỉ:</strong> {{ order.customer.address }}</p>
+        </div>
+      </div>
+
+      <!-- Thông tin đơn hàng -->
+      <div class="card">
+        <h3>Thông tin đơn hàng</h3>
+        <div class="info">
+          <p><strong>Mã đơn hàng:</strong> {{ order.orderId }}</p>
+          <p><strong>Ngày đặt:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
+          <p><strong>Ghi chú:</strong> {{ order.customer.note|default:"(Không có)" }}</p>
+        </div>
+      </div>
+
+      <!-- Danh sách sản phẩm -->
+      <div class="card" style="flex: 100%;">
+        <h3>Danh sách sản phẩm</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Tên sản phẩm</th>
+              <th>Số lượng</th>
+              <th>Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for detail in order_details %}
+            <tr>
+              <td>{{ detail.product.product_name }}</td>
+              <td>{{ detail.quantity }}</td>
+              <td>{{ detail.totalPrice|floatformat:0 }}₫</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center;">Không có sản phẩm trong đơn hàng này.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="total">Tổng tiền: {{ order.amount|floatformat:0 }}₫</div>
+      </div>
     </div>
   </div>
-</body>
-</html>
+{% endblock %}

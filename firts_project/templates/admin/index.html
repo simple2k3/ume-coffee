@@ -1,0 +1,218 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+<style>
+/* ====== Tổng thể ====== */
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #f8fafc;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin: 40px 0 30px;
+}
+
+.dashboard-header h2 {
+  color: #1e293b;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+/* ====== Cards Tổng quan ====== */
+.dashboard-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.card {
+  flex: 1;
+  min-width: 250px;
+  max-width: 300px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  padding: 25px 30px;
+  border-radius: 14px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+.card .info {
+  text-align: right;
+}
+.card h3 {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+}
+.card p {
+  margin: 4px 0 0;
+  opacity: 0.9;
+}
+.bg-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.bg-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.bg-green { background: linear-gradient(135deg, #10b981, #059669); }
+
+/* ====== Biểu đồ ====== */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  padding: 0 50px 60px;
+}
+
+.chart-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 25px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.chart-box h3 {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+canvas {
+  width: 100% !important;
+  height: 300px !important;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .charts-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="dashboard-cards">
+  <!-- Đơn hàng -->
+  <a href="{% url 'admin:first_app_order_changelist' %}" class="card bg-blue" style="text-decoration: none;">
+    <div><i class="fas fa-shopping-cart fa-2x"></i></div>
+    <div class="info">
+      <h3>{{ total_orders|default:"0" }}</h3>
+      <p>Đơn hàng</p>
+    </div>
+  </a>
+
+  <!-- Sản phẩm -->
+  <a href="{% url 'admin:first_app_productmaster_changelist' %}" class="card bg-orange" style="text-decoration: none;">
+    <div><i class="fas fa-box fa-2x"></i></div>
+    <div class="info">
+      <h3>{{ total_products|default:"0" }}</h3>
+      <p>Sản phẩm</p>
+    </div>
+  </a>
+      <!-- doanh thu-->
+<div class="card bg-purple">
+  <div class="info">
+    <h3>{{ today_revenue|intcomma }}</h3>
+    <p>Doanh thu tháng này (VNĐ)</p>
+  </div>
+</div>
+  <!-- Loại sản phẩm -->
+  <a href="{% url 'admin:first_app_categories_changelist' %}" class="card bg-green" style="text-decoration: none;">
+    <div><i class="fas fa-tags fa-2x"></i></div>
+    <div class="info">
+      <h3>{{ total_categories|default:"0" }}</h3>
+      <p>Loại sản phẩm</p>
+    </div>
+  </a>
+
+  <!-- Bàn -->
+  <a href="{% url 'admin:first_app_tablemaster_changelist' %}" class="card bg-purple" style="text-decoration: none;">
+    <div><i class="fas fa-chair fa-2x"></i></div>
+    <div class="info">
+      <h3>{{ total_table|default:"0" }}</h3>
+      <p>Bàn</p>
+    </div>
+  </a>
+</div>
+<div class="charts-grid">
+  <div class="chart-box">
+    <h3> Doanh thu theo ngày </h3>
+    <canvas id="revenueChart"></canvas>
+  </div>
+
+  <div class="chart-box">
+    <h3> Trạng thái đơn hàng</h3>
+    <canvas id="orderStatusChart"></canvas>
+  </div>
+</div>
+
+<!-- FontAwesome + Chart.js -->
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // === Biểu đồ doanh thu ===
+  const labels = {{ chart_data.labels|safe }};
+  const values = {{ chart_data.values|safe }};
+
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Doanh thu (VNĐ)',
+        data: values,
+        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+        borderColor: '#2563eb',
+        borderWidth: 1.5,
+        borderRadius: 6,
+        hoverBackgroundColor: '#3b82f6'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { color: '#334155' },
+          grid: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#334155',
+            callback: value => value.toLocaleString('vi-VN') + ' ₫'
+          }
+        }
+      }
+    }
+  });
+
+  // === Biểu đồ trạng thái đơn hàng ===
+  const orderData = {{ order_status_data|safe }};
+  new Chart(document.getElementById('orderStatusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Hoàn tất', 'Đang xử lý', 'Hủy bỏ'],
+      datasets: [{
+        data: [orderData.completed, orderData.pending, orderData.cancelled],
+        backgroundColor: ['#10b981', '#3b82f6', '#ef4444'],
+        hoverOffset: 10
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#334155' }
+        }
+      }
+    }
+  });
+</script>
+{% endblock %}

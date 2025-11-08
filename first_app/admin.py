@@ -5,7 +5,9 @@ from django.http import HttpResponse
 import zipfile
 from io import BytesIO
 import os
-from decouple import config  # pip install python-decouple
+import json
+from decouple import config
+from django.template.response import TemplateResponse
 from first_app.models import TableMaster
 from first_app.services.qr_table_services import TableServices
 from first_app.models import Categories
@@ -19,14 +21,25 @@ from first_app.models import OrderDetail
 
 from first_app.models import Customer
 
+from first_app.services.dashbroad import DashboardService
+from datetime import date
 NGROK_URL = config('NGROK_URL')
 
+class MyAdminSite(admin.AdminSite):
+    site_header = "Trang quản trị hệ thống"
+    site_title = "Quản trị"
+    index_title = "Dashboard"
+
+    def index(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        stats = DashboardService.get_order_stats(months=6)
+        extra_context["chart_data"] = stats
+        return TemplateResponse(request, "admin/index.html", extra_context)
 
 @admin.register(TableMaster)
 class TableMasterAdmin(admin.ModelAdmin):
     list_display = ('id', 'table_name', 'qr_code')
     actions = ['print_qr_action']
-
     def print_qr_action(self, request, queryset):
         if not queryset.exists():
             self.message_user(request, "Chưa chọn bàn nào")
@@ -39,7 +52,6 @@ class TableMasterAdmin(admin.ModelAdmin):
             table.qr_code.save(file_name, ContentFile(buffer.getvalue()), save=True)
             self.message_user(request, f"Đã tạo QR cho {queryset.count()} bàn")
     print_qr_action.short_description = "In QR cho bàn đã chọn"
-
 
 @admin.register(Categories)
 class CategoriesAdmin(admin.ModelAdmin):
@@ -76,24 +88,11 @@ class OrderAdmin(admin.ModelAdmin):
     actions = ['updatestatus', 'destroyorder', 'print_qr_action']
     inlines = [OrderDetailInline]
     change_form_template = "admin/first_app/order/change_form.html"
-
-    def print_qr_action(self, request, queryset):
-        if not queryset.exists():
-            self.message_user(request, " Chưa chọn đơn hàng nào.")
-            return
-        for order in queryset:
-            url = f"{NGROK_URL}/order-detail/{order.orderId}/"
-            buffer = TableServices.generate_qr_for_order(url)
-            file_name = f'order_{order.id}.png'
-            order.qr_code.save(file_name, ContentFile(buffer.getvalue()), save=True)
-        self.message_user(request, f"Đã tạo mã QR cho {queryset.count()} đơn hàng.")
-
-    print_qr_action.short_description = " In QR cho đơn hàng đã chọn"
     def get_fieldsets(self, request, obj=None):
         return []
     def has_change_permission(self, request, obj=None):
         return False
-    def has_delete_permission(self, request, obj=None):
+    def has_add_permission(self, request):
         return False
     @admin.action(description="Đã thanh toán")
     def updatestatus(self, request, queryset):
@@ -149,3 +148,34 @@ class StatusMasterAdmin(admin.ModelAdmin):
 @admin.register(Customer)
 class CustomerMasterAdmin(admin.ModelAdmin):
     list_display = ('customer_name', 'phone', 'address')
+
+_original_index = admin.site.index
+def custom_admin_index(request, extra_context=None):
+    extra_context = extra_context or {}
+
+    today = date.today()
+
+    # Biểu đồ doanh thu trong tháng hiện tại
+    chart_data = DashboardService.get_daily_revenue(month=today.month, year=today.year)
+
+    # Thống kê tổng quan
+    summary = DashboardService.get_summary()
+
+    # Trạng thái đơn hàng
+    order_status_data = DashboardService.get_order_status_data()
+    # Tổng doanh thu hôm nay
+    today_revenue = DashboardService.get_today_revenue()
+    # Gộp vào context
+    extra_context.update({
+        "chart_data": chart_data,
+        "order_status_data": order_status_data,
+        **summary,
+        "today_revenue": today_revenue,
+        "current_month_label": today.strftime("Tháng %m/%Y"),
+    })
+
+    context = dict(admin.site.each_context(request), **extra_context)
+    return TemplateResponse(request, "admin/index.html", context)
+
+#  Ghi đè trang index mặc định
+admin.site.index = custom_admin_index

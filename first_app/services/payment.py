@@ -7,6 +7,7 @@ import requests
 import json
 from datetime import timezone
 
+from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 import uuid
@@ -30,9 +31,8 @@ from first_app.services.orderdetail_services import NotificationService
 from first_app.services.sendemail import send_order_email
 from first_app.models import OrderDetail
 
-
+NGROK_URL = os.environ.get("NGROK_URL")
 class MomoService:
-
     # Cấu hình MoMo sandbox
     ENDPOINT = "https://test-payment.momo.vn/v2/gateway/api/create"
     PARTNER_CODE = "MOMO"
@@ -40,16 +40,14 @@ class MomoService:
     SECRET_KEY = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
     REQUEST_TYPE = "captureWallet"
 
-    BASE_URL = "hhttps://156a95bd09af.ngrok-free.app"
-    REDIRECT_URL = f"{BASE_URL}/payment/momo/return/"
-    IPN_URL = f"{BASE_URL}/payment/momo/ipn/"
+    REDIRECT_URL = f"{NGROK_URL}/payment/momo/return/"
+    IPN_URL = f"{NGROK_URL}/payment/momo/ipn/"
     #tạo yêu cầu tới momo
     @staticmethod
     def create_payment(amount: int, order_info="Thanh toán UME Coffee", extra_data=""):
         request_id = str(uuid.uuid4())
         order_id = str(uuid.uuid4())
         amount_str = str(amount)
-
         # Tạo chữ ký
         raw_signature = (
             f"accessKey={MomoService.ACCESS_KEY}&amount={amount_str}&extraData={extra_data}"
@@ -90,19 +88,15 @@ class MomoService:
         cart = request.session.get("cart", {})
         table_id = request.session.get('table_id')
         table = TableMaster.objects.filter(id=table_id).first() if table_id else None
-
         if not isinstance(cart, dict) or not cart:
             return JsonResponse({"error": "Giỏ hàng trống hoặc sai định dạng"})
-
         total = sum(
             item["price"] * item["quantity"]
             for item in cart.values()
             if isinstance(item, dict) and "price" in item and "quantity" in item
         )
-
         if total == 0:
             return JsonResponse({"error": "Không có sản phẩm hợp lệ trong giỏ hàng"})
-
         # --- Gọi API MoMo ---
         momo_result = MomoService.create_payment(total, order_info)
         pay_url = momo_result.get("payUrl")
@@ -129,10 +123,9 @@ class MomoService:
             table=table,
             customer=customer,
         )
-        #gửi email cho người dùng
-        if customer and customer.email:
-            send_order_email(customer.email, order)
-
+        qr_url = f"{NGROK_URL}/order-detail/{order.orderId}/"
+        qr_file = TableServices.generate_qr_for_order(qr_url)
+        order.qr_code.save(f"{order.orderId}.png", qr_file, save=True)
         # --- Tạo OrderDetail ---
         for code, item in cart.items():
             try:
@@ -181,6 +174,9 @@ class MomoService:
             table=table,
             customer=customer,
         )
+        qr_url = f"{NGROK_URL}/order-detail/{order.orderId}/"
+        qr_file = TableServices.generate_qr_for_order(qr_url)
+        order.qr_code.save(f"{order.orderId}.png", qr_file, save=True)
 
         for code, item in cart.items():
             try:

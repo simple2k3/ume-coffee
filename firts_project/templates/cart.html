@@ -177,41 +177,20 @@
       <a href="{% url 'portfolio' %}" class="btn btn-custom btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Tiếp tục mua hàng
       </a>
-
       <div class="dropdown d-inline-block" >
          <a class="dropdown-item d-flex align-items-center" href="{% url 'delivery_info' %}">
             <i class="bi bi-truck me-2"></i> Xác Nhận Đơn Hàng
         </a>
-
-<!--          <ul class="dropdown-menu dropdown-menu-end p-2">-->
-<!--            &lt;!&ndash; Thanh toán tiền mặt &ndash;&gt;-->
-<!--            <li>-->
-<!--              <form action="{% url 'payment_cash' %}" method="post" class="d-inline">-->
-<!--                {% csrf_token %}-->
-<!--                <button type="submit" class="dropdown-item d-flex align-items-center">-->
-<!--                  <i class="bi bi-cash me-2"></i> Thanh toán tiền mặt (Tại Quán)-->
-<!--                </button>-->
-<!--              </form>-->
-<!--            </li>-->
-<!--            &lt;!&ndash; Thanh toán MoMo &ndash;&gt;-->
-<!--            <li>-->
-<!--              <a class="dropdown-item d-flex align-items-center" href="{% url 'momo_payment' %}">-->
-<!--                <i class="bi bi-credit-card me-2"></i> Thanh toán qua MoMo (Tại Quán)-->
-<!--              </a>-->
-<!--            </li>-->
-<!--
-            </ul>-->
         </div>
-
-    {% else %}
-    <div class="d-flex flex-column justify-content-center align-items-center" style="height:50vh;">
-      <img src="{% static 'assets/img/empty-cart.png' %}" alt="Empty cart" style="width:120px; opacity:0.7;">
-      <p class="text-muted mt-3">Giỏ hàng đang trống.</p>
-      <a href="{% url 'portfolio' %}" class="btn btn-custom btn-sm mt-2">
-        <i class="bi bi-arrow-left me-1"></i> Quay lại trang Sản Phẩm
-      </a>
-    </div>
-    {% endif %}
-  </div>
+        {% else %}
+        <div class="d-flex flex-column justify-content-center align-items-center" style="height:50vh;">
+          <img src="{% static 'assets/img/empty-cart.png' %}" alt="Empty cart" style="width:120px; opacity:0.7;">
+          <p class="text-muted mt-3">Giỏ hàng đang trống.</p>
+          <a href="{% url 'portfolio' %}" class="btn btn-custom btn-sm mt-2">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại trang Sản Phẩm
+          </a>
+        </div>
+        {% endif %}
+      </div>
     </main>
 {% endblock %}

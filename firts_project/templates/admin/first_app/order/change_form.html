@@ -5,7 +5,6 @@
 <style>
   .submit-row { display: none !important; } /* Ẩn Save, Delete, Close */
   .breadcrumbs, .inline-group .tabular table thead { display: none !important; }
-
 </style>
 
 <div style="display: flex; gap: 20px;">
@@ -27,21 +26,33 @@
           <td style="padding: 8px; text-align: center;">{{ detail.quantity }}</td>
           <td style="padding: 8px;">{{ detail.totalPrice|floatformat:0 }}₫</td>
         </tr>
+
         {% empty %}
-        <tr><td colspan="4" style="text-align:center; padding:10px;">Không có sản phẩm nào.</td></tr>
+        <tr><td colspan="3" style="text-align:center; padding:10px;">Không có sản phẩm nào.</td></tr>
         {% endfor %}
+
       </tbody>
     </table>
+              <!-- QR CODE -->
+      {% if original.qr_code %}
+      <div style="text-align: center;padding:50px">
+        <img src="{{ original.qr_code.url }}" alt="QR Code" style="width: 180px; height: 180px;">
+        <p><small>Quét để xem chi tiết đơn hàng</small></p>
+      </div>
+      {% endif %}
   </div>
+
+
 
   <!-- THÔNG TIN KHÁCH HÀNG -->
   <div style="flex: 1; background: #f8f9fa; border-radius: 10px; padding: 15px;">
-    <h3> Thông tin khách hàng</h3>
+    <h3>Thông tin khách hàng</h3>
     <p><strong>Tên:</strong> {{ original.customer.customer_name }}</p>
     <p><strong>SĐT:</strong> {{ original.customer.phone }}</p>
     <p><strong>Địa chỉ:</strong> {{ original.customer.address }}</p>
     <p><strong>Trạng thái:</strong> {{ original.status }}</p>
     <p><strong>Tổng tiền:</strong> {{ original.amount|floatformat:0 }}₫</p>
+
   </div>
 </div>
 {% endblock %}
