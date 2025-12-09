@@ -26,202 +26,251 @@
   <link href="{% static 'assets/css/main.css' %}" rel="stylesheet">
 
   <style>
-    /* Tổng thể */
-    body {
-      margin: 0;
-      padding: 0;
-      background: #fff;
-    }
-
-    /* Header trong suốt, không viền trắng */
-    #header.header {
-        background: #fff;
-      border: none;
-      box-shadow: none;
-    }
-
-    /* Bố cục header */
-    #header .container-xl {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    /* Menu chính */
-    .navmenu ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      gap: 20px;
-    }
-
-    .navmenu li {
-      position: relative;
-    }
-
-    /* Dropdown */
-    .navmenu ul ul {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      background: #fff;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      flex-direction: column;
-      min-width: 200px;
-      z-index: 1000;
-      border-radius: 4px;
-    }
-
-    .navmenu ul ul {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: #fff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  flex-direction: column;
-  min-width: 200px;
-  z-index: 1000;
-  border-radius: 4px;
-  width: max-content; /* tự điều chỉnh theo nội dung */
+    /* =================== Tổng thể =================== */
+body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
 }
 
-.navmenu ul ul li {
-  width: 100%; /* mỗi <li> chiếm toàn bộ width của <ul> */
+/* Header trong suốt */
+#header.header {
+    background: #fff;
+    border: none;
+    box-shadow: none;
+    padding: 10px 20px;
 }
 
-.navmenu ul ul li a {
-  display: block;   /* để padding áp dụng đúng */
-  width: 100%;      /* đồng đều */
-  padding: 10px 15px;
-  color: #333;
-  text-decoration: none;
+/* Header container: desktop */
+#header .container-xl {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
-.navmenu ul ul li a:hover {
-  background-color: #f8f9fa;
-  color: #000;
+/* Logo */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo img {
+    height: 40px;
+}
+
+.sitename {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* =================== Menu chính =================== */
+.navmenu {
+    display: flex;
+    align-items: center;
+}
+
+.navmenu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 20px;
+}
+
+.navmenu li {
+    position: relative;
+}
+
+/* Dropdown */
+.navmenu ul ul {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    flex-direction: column;
+    border-radius: 4px;
+    min-width: 200px;
+    z-index: 1000;
 }
 
 .navmenu ul li:hover > ul {
-  display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
-    /* Biểu tượng giỏ hàng và chuông */
-    .header-cart, .header-bell {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
+.navmenu ul ul li a {
+    display: block;
+    padding: 10px 15px;
+    color: #333;
+    text-decoration: none;
+}
 
-    .cart-icon, .bell-icon {
-      display: inline-block;
-      padding: 8px;
-      border-radius: 50%;
-      transition: background-color 0.3s;
-    }
+.navmenu ul ul li a:hover {
+    background-color: #f8f9fa;
+    color: #000;
+}
 
-    .cart-icon:hover, .bell-icon:hover {
-      background-color: rgba(0, 0, 0, 0.05);
-    }
-
-    .cart-badge {
-      font-size: 0.7rem;
-      width: 18px;
-      height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Responsive menu */
-    @media (max-width: 992px) {
-  #header .container-xl {
-    flex-wrap: nowrap;
-    justify-content: space-between;
-  }
-
-  .logo img {
-    height: 35px; /* thu nhỏ logo */
-  }
-
-  .sitename {
-    font-size: 18px; /* giảm kích thước chữ */
-    white-space: nowrap;
-  }
-
-  .logo {
+/* =================== Thanh tìm kiếm =================== */
+.search-form {
     display: flex;
     align-items: center;
-  }
-
-  .mobile-nav-toggle {
-    font-size: 26px;
-  }
+    max-width: 350px;
 }
 
-/* Nhỏ hơn 576px (điện thoại) */
-@media (max-width: 576px) {
-  .logo img {
-    height: 30px;
-  }
+.search-input {
+    border-radius: 20px;
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    flex: 1;
+    transition: 0.3s;
+}
 
-  .sitename {
-    font-size: 16px;
-  }
-}    /* Responsive menu */
-    @media (max-width: 992px) {
-  #header .container-xl {
-    flex-wrap: nowrap;
-    justify-content: space-between;
-  }
+.search-input:focus {
+    border-color: #000;
+    box-shadow: none;
+}
 
-  .logo img {
-    height: 35px; /* thu nhỏ logo */
-  }
-
-  .sitename {
-    font-size: 18px; /* giảm kích thước chữ */
-    white-space: nowrap;
-  }
-
-  .logo {
+.search-form button {
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
-  }
-
-  .mobile-nav-toggle {
-    font-size: 26px;
-  }
+    justify-content: center;
+    margin-left: 8px;
 }
 
-/* Nhỏ hơn 576px (điện thoại) */
+/* =================== Biểu tượng giỏ hàng / chuông =================== */
+.header-cart, .header-bell {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.cart-icon, .bell-icon {
+    display: inline-block;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.cart-icon:hover, .bell-icon:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.cart-badge {
+    font-size: 0.7rem;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =================== Responsive =================== */
+
+/* Tablet / Laptop */
+@media (max-width: 992px) {
+    .logo img {
+        height: 35px;
+    }
+    .sitename {
+        font-size: 18px;
+    }
+
+    #navmenu ul {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        background: #fff;
+        padding: 15px 20px;
+        gap: 15px;
+        z-index: 9999;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    #navmenu ul.show {
+        display: flex;
+    }
+
+    /* Dropdown trong mobile */
+    #navmenu ul ul {
+        position: static;
+        width: 100%;
+        box-shadow: none;
+        margin-top: 10px;
+        background: #f8f8f8;
+        padding: 10px;
+        border-radius: 6px;
+    }
+
+   /* =================== Thanh tìm kiếm =================== */
+.search-form {
+    display: flex;
+    align-items: center;
+    max-width: 350px;
+}
+
+/* Desktop: search ngang, trong header */
+.search-form {
+    margin-left: auto; /* đẩy sang phải */
+}
+
+/* Input & nút */
+.search-input {
+    border-radius: 20px;
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    flex: 1;
+    transition: 0.3s;
+}
+
+.search-input:focus {
+    border-color: #000;
+    box-shadow: none;
+}
+
+.search-form button {
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+}
+
+/* ====== Mobile <576px: search nằm bên dưới menu ====== */
 @media (max-width: 576px) {
-  .logo img {
-    height: 30px;
-  }
+    #header.header {
+        padding-bottom: 60px; /* đủ chỗ cho search xuống dưới */
+        position: relative;
+        flex-wrap: wrap; /* cho header xếp các dòng */
+    }
 
-  .sitename {
-    font-size: 16px;
-  }
+    .search-form {
+        position: absolute;
+        bottom: -50px; /* nằm dưới menu */
+        left: 0;
+        width: 100%; /* trải dài */
+        padding: 0 15px;
+        z-index: 999;
+    }
+
+    /* Khi menu mobile mở: search trở thành static, không che menu */
+    #navmenu ul.show ~ .search-form {
+        position: static;
+        margin-top: 10px;
+    }
 }
 
-@media (max-width: 390px) {
-  .navmenu a {
-    font-size: 14px;
-  }
 
-  .mobile-nav-toggle {
-    font-size: 24px;
-  }
-
-  #header.header {
-    padding: 6px 10px;
-  }
-}
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -256,7 +305,13 @@
       </ul>
       <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
     </nav>
-
+      <!--search-->
+    <form method="get" action="{% url 'search_products' %}" class="search-form d-flex align-items-center me-3">
+         <input type="text" name="q" class="form-control search-input" placeholder="Tìm kiếm cà phê..." value="{{ request.GET.q|default:'' }}">
+         <button type="submit" class="btn btn-dark ms-2">
+           <i class="bi bi-search"></i>
+         </button>
+    </form>
     <!-- Biểu tượng bên phải -->
     <div class="d-flex align-items-center">
       <!-- Giỏ hàng -->
@@ -283,7 +338,6 @@
           </span>
         {% endif %}
       </a>
-
       <!-- Danh sách thông báo -->
       <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" style="width: 320px;">
           {% if notifications %}
@@ -304,7 +358,6 @@
             <li class="text-center text-muted py-2">Không có đơn hàng trong phiên</li>
           {% endif %}
         </ul>
-
     </div>
   </div>
 </header>

@@ -75,7 +75,6 @@ class MomoService:
             "signature": signature,
             "lang": "vi"
         }
-
         try:
             response = requests.post(MomoService.ENDPOINT, json=data, timeout=10)
             response.raise_for_status()
@@ -139,7 +138,6 @@ class MomoService:
                 )
             except ProductMaster.DoesNotExist:
                 continue
-
         request.session["orderId"] = order.orderId
         return redirect(pay_url)
 

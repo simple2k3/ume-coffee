@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Phiếu nhập tồn kho</h1>
+
+<form method="post">
+  {% csrf_token %}
+
+  <label><strong>Nhà cung cấp:</strong></label>
+  <select name="supplier" required style="padding:6px; margin-bottom:20px;">
+    {% for s in suppliers %}
+      <option value="{{ s.id }}">{{ s.user.username }} - {{ s.phone }}</option>
+    {% endfor %}
+  </select>
+<label><strong>Chọn đơn PO:</strong></label>
+<select name="po_id" required style="padding:6px; margin-bottom:20px;">
+  {% for po in purchase_orders %}
+    <option value="{{ po.po_id }}">
+      PO {{ po.po_id }} -
+      {% if po.supplier and po.supplier.user %}{{ po.supplier.user.username }}{% else %}Chưa có NCC{% endif %}
+    </option>
+  {% endfor %}
+</select>
+  <table class="table" style="width:100%; margin-top:20px;">
+    <thead>
+      <tr>
+        <th>Nguyên liệu</th>
+        <th>Tồn hiện tại</th>
+        <th>Số lượng nhập</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for m in materials %}
+      <tr>
+        <td>{{ m.material_name }}</td>
+        <td>{{ m.inventory.quantity|default:"0" }}</td>
+       <td>
+          <input type="number" step="0.1" min="0" name="qty_{{ m.material_id }}" style="width:80px;">
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <button type="submit" class="button button-success" style="margin-top:20px;">
+    Lưu phiếu nhập
+  </button>
+
+</form>
+{% endblock %}

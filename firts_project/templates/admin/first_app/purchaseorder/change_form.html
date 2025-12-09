@@ -1,0 +1,104 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+  /* Giữ nguyên CSS hiện tại */
+  .order-detail-container {
+    max-width: 1100px;
+    margin: 0 auto 20px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .products { flex: 3; min-width: 300px; padding: 35px; }
+  .products h3 { color: #006fe6; font-size: 1.6em; margin: 0 0 25px 0; }
+  .products table { width: 100%; border-collapse: collapse; }
+  .products th { background: #006fe6; color: white; padding: 14px 10px; text-align: left; font-weight: 600; }
+  .products th:nth-child(2), .products th:nth-child(3) { text-align: center; }
+  .products td { padding: 14px 10px; border-bottom: 1px solid #eee; }
+  .products td:nth-child(2), .products td:nth-child(3) { text-align: center; }
+
+  .customer-info { flex: 2; min-width: 300px; background: #f8fbff; padding: 35px; border-left: 1px solid #e0e7ff; }
+  .customer-info h3 { color: #006fe6; font-size: 1.6em; margin: 0 0 30px 0; }
+  .info-list p { margin: 18px 0; font-size: 1.1em; line-height: 1.6; }
+  .info-list strong { color: #2c3e50; min-width: 120px; display: inline-block; }
+
+  /* Nút xác nhận nổi bật, giống export-btn */
+  .confirm-section {
+    width: 100%;
+    background: white;
+    text-align: center;
+    padding: 40px 0;
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+  }
+  .confirm-btn {
+    background: #27ae60;
+    color: white !important;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: 20px 70px;
+    border-radius: 16px;
+    border: 3px solid #219653;
+    cursor: pointer;
+    box-shadow: 0 12px 30px rgba(39,174,96,0.35);
+    transition: all 0.3s ease;
+  }
+  .confirm-btn:hover { background: #219653; transform: translateY(-6px); box-shadow: 0 18px 40px rgba(39,174,96,0.45); }
+  .confirm-btn:active { transform: translateY(-2px); }
+  .confirm-note { margin-top: 16px; color: #666; font-size: 1.05em; }
+</style>
+
+<div class="order-detail-container">
+
+  <!-- DANH SÁCH NGUYÊN LIỆU -->
+  <div class="products">
+    <h3>Danh sách nguyên liệu</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Nguyên liệu</th>
+          <th>Số lượng</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for detail in original.details.all %}
+        <tr>
+          <td>{{ detail.material.material_name }}</td>
+          <td>{{ detail.quantity }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" style="text-align:center;">Không có nguyên liệu nào.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- THÔNG TIN NCC -->
+  <div class="customer-info">
+    <h3>Thông tin NCC</h3>
+    <div class="info-list">
+      <p><strong>Nhà cung cấp:</strong> {% if original.supplier %}{{ original.supplier.user.username }}{% else %}Chưa gán NCC{% endif %}</p>
+      <p><strong>Phone:</strong> {% if original.supplier %}{{ original.supplier.phone }}{% else %}-{% endif %}</p>
+      <p><strong>Địa chỉ:</strong> {% if original.supplier %}{{ original.supplier.address }}{% else %}-{% endif %}</p>
+      <p><strong>Trạng thái:</strong> {{ original.status }}</p>
+      <p><strong>Ghi chú:</strong> {{ original.note }}</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- NÚT XÁC NHẬN PO NỔI BẬT BÊN DƯỚI -->
+<div class="confirm-section">
+  <form method="post" action="{% url 'confirm_purchase_order' pk=original.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="confirm-btn">Xác nhận đơn hàng</button>
+    <p class="confirm-note">Bấm để xác nhận PO và cập nhật tồn kho.</p>
+  </form>
+</div>
+
+{% endblock %}

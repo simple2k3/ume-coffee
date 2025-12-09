@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kết quả tìm kiếm - UME Coffee{% endblock %}
+
+{% block extra_head %}
+<style>
+  body {
+    background-color: #fff8f0;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* Tiêu đề trang */
+  .category-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4A2C2A;
+    text-align: center;
+    margin: 30px 0;
+  }
+
+  /* Khung ảnh sản phẩm */
+  .image-wrapper {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease;
+  }
+
+  .image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .image-wrapper:hover img {
+    transform: scale(1.05);
+  }
+
+  /* Tên và thông tin sản phẩm */
+  .card-body h5 {
+    color: #4A2C2A;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .product-type {
+    font-size: 0.85rem;
+    color: #6B4E31;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Nút */
+  .btn-detail {
+    background-color: #fff8f0;
+    color: #6B4E31;
+    border: 1px solid #6B4E31;
+    font-weight: 600;
+    height: 38px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-detail:hover {
+    background-color: #6B4E31;
+    color: #fff;
+  }
+
+  .btn-add-cart {
+    background-color: #6B4E31;
+    color: #fff;
+    font-weight: 600;
+    height: 38px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-add-cart:hover {
+    background-color: #3D2420;
+  }
+
+  .product-card-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    background: transparent;
+    padding: 0;
+  }
+
+  .breadcrumb a, .breadcrumb span {
+    color: #6B4E31;
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    text-decoration: underline;
+  }
+
+  .breadcrumb-separator {
+    color: #6B4E31;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main mt-5">
+  <div class="container">
+    <h2 class="category-title" data-aos="fade-up">Kết quả tìm kiếm cho: "{{ query }}"</h2>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-4">
+        {% for crumb in request.breadcrumbs %}
+          <li class="breadcrumb-item {% if forloop.last %}active{% endif %}" {% if forloop.last %}aria-current="page"{% endif %}>
+            {% if crumb.url and not forloop.last %}
+              <a href="{{ crumb.url }}">{{ crumb.text }}</a>
+            {% else %}
+              <span>{{ crumb.text }}</span>
+            {% endif %}
+          </li>
+          {% if not forloop.last %}
+            <li class="breadcrumb-separator mx-1">/</li>
+          {% endif %}
+        {% endfor %}
+      </ol>
+    </nav>
+
+    <!-- Danh sách sản phẩm -->
+    <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+      {% for product in products %}
+      <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-center">
+        <div class="card shadow-sm border-0 w-100 h-100" style="max-width:280px;">
+          <div class="image-wrapper">
+            {% if product.imageUrl %}
+              <img src="{{ product.imageUrl }}" alt="{{ product.product_name }}">
+            {% else %}
+              <img src="{% static 'assets/img/no-image.png' %}" alt="No image">
+            {% endif %}
+          </div>
+
+          <div class="card-body text-center">
+            <h5 class="card-title mb-2">{{ product.product_name }}</h5>
+            <p class="text-muted mb-1">Giá: {{ product.price|floatformat:0 }}₫</p>
+            {% if product.product_type %}
+              <p class="product-type mb-2">{{ product.product_type.product_type_name }}</p>
+            {% endif %}
+            <div class="product-card-buttons">
+              <a href="{% url 'product_detail' product.product_code %}" class="btn btn-detail w-50">
+                <i class="bi bi-eye me-1"></i> Xem
+              </a>
+              <form action="{% url 'add_to_cart_view' product.product_code %}" method="post" class="w-50">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-add-cart w-100">
+                  <i class="bi bi-cart-plus me-1"></i> Thêm
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center text-muted mt-4">
+        Không tìm thấy sản phẩm nào.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</main>
+{% endblock %}

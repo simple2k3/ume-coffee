@@ -1,0 +1,30 @@
+<h2>Danh sách khách hàng</h2>
+
+<table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+        <tr>
+            <th>STT</th>
+            <th>Họ tên</th>
+            <th>Số điện thoại</th>
+            <th>Email</th>
+            <th>Địa chỉ</th>
+            <th>Ghi chú</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for customer in customers %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ customer.customer_name }}</td>
+            <td>{{ customer.phone }}</td>
+            <td>{{ customer.email }}</td>
+            <td>{{ customer.address }}</td>
+            <td>{{ customer.note }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">Chưa có khách hàng nào</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

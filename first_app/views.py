@@ -4,6 +4,8 @@ import json
 import re
 from datetime import timezone
 
+from django.conf import settings
+from django.core.signing import BadSignature
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 import uuid
@@ -34,6 +36,19 @@ from first_app.services.deliveryorder import DeliveryService
 from first_app.services.sendemail import send_order_email
 from first_app.models import Customer
 
+from first_app.services.base_services import SearchService
+
+from first_app.services.inventory_service import InventoryService
+
+
+from first_app.services.inpdf import generate_invoice
+
+from first_app.models import Supplier, Material
+
+from first_app.services.purchase_order_service import PurchaseOrderService
+from first_app.models import PurchaseOrder
+from itsdangerous import URLSafeSerializer
+
 
 #trang chủ
 def index(request):
@@ -63,7 +78,7 @@ def portfolio(request):
 
 
 @register_breadcrumb('Danh Mục')
-def product_detail(request, product_code):
+def product_detail(request, product_code):#hiển thị trang chi tiết sản phẩm
     table_id = request.session.get('table_id')
     if not table_id:
         messages.error(request, "Vui lòng quét QR bàn trước khi xem sản phẩm.")
@@ -85,7 +100,7 @@ def print_qr(request, table_id): #in QR bàn
     buffer = TableServices.generate_qr_for_table(table_id, request)
     return HttpResponse(buffer, content_type="image/png")
 
-def order_detail_qr(request, order_id): #in QR cho chi tiết sản phẩm
+def order_detail_qr(request, order_id):
     # Lấy order theo orderId
     order = get_object_or_404(Order, orderId=order_id)
     order_details = order.orderdetail_set.all()
@@ -97,10 +112,15 @@ def order_detail_qr(request, order_id): #in QR cho chi tiết sản phẩm
 
 
 def table_order(request, table_id):
+    # Lưu table_id vào session để biết khách đang ngồi ở bàn nào
     request.session['table_id'] = table_id
+    # Nếu session chưa có order_key, tạo một mã duy nhất (UUID) cho đơn hàng
+    # order_key giúp phân biệt các phiên đặt món khác nhau
     if 'order_key' not in request.session:
         request.session['order_key'] = str(uuid.uuid4())
+        # Lấy order_key từ session để truyền vào template
     order_key = request.session['order_key']
+    # Lấy danh sách sản phẩm (thực đơn) đang hoạt động từ service
     product_data = ProductsServices.getlistproduct()
     return render(request, 'index.html', {
         'table_id': table_id,
@@ -166,18 +186,11 @@ def add_to_cart_view(request, product_code):
     messages.success(request, f"Đã thêm {product.product_name} vào giỏ hàng.")
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
-
-
 def remove_from_cart(request, product_code):
     CartService.remove_from_cart(request.session, product_code)
     messages.success(request, "Đã xóa sản phẩm khỏi giỏ hàng.")
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
-
-def clear_cart(request):
-    CartService.clear_cart(request.session)
-    messages.success(request, "Đã xóa toàn bộ giỏ hàng.")
-    return redirect('cart_view')
 
 #orderdetail
 def get_notifications(request): #lấy thông tin hiện detail lên thông báo
@@ -198,31 +211,27 @@ def momo_return(request):
     if order_id:
         try:
             order = Order.objects.get(orderId=order_id)
-
             if result_code == "0":
                 paid_status = StatusMaster.objects.filter(status_code=2).first()
                 if paid_status:
                     order.status = paid_status
                     order.save()
+                    InventoryService.reduce_inventory(order)
                     messages.success(request, "💰 Thanh toán thành công!")
             else:
-
                 failed_status = StatusMaster.objects.filter(status_code=3).first()
                 if failed_status:
                     order.status = failed_status
                     order.save()
                 messages.warning(request, f"⚠️ Thanh toán thất bại hoặc bị hủy ({request.GET.get('message')})")
-
         except Order.DoesNotExist:
             messages.error(request, "Không tìm thấy đơn hàng.")
-
     # 👉 Sau khi xử lý xong, quay lại trang chủ (index)
     return redirect("index")
 @csrf_exempt
 def momo_ipn(request):
     if request.method != "POST":
         return JsonResponse({"message": "Invalid request method"}, status=405)
-
     data = json.loads(request.body.decode('utf-8'))
     print(" IPN nhận từ MoMo:", data)
 
@@ -239,7 +248,6 @@ def momo_ipn(request):
         f"&responseTime={data.get('responseTime','')}&resultCode={result_code}"
         f"&transId={data.get('transId','')}"
     )
-
     generated_signature = hmac.new(
         MomoService.SECRET_KEY.encode('utf-8'),
         raw_signature.encode('utf-8'),
@@ -256,11 +264,11 @@ def momo_ipn(request):
         success_status = StatusMaster.objects.filter(status_code=2).first()
         order.status = success_status
         order.save()
+        InventoryService.reduce_inventory(order)
         # --- Gửi email tại đây ---
         customer = order.customer
         if customer and customer.email:
             send_order_email(customer.email, order)
-
         return JsonResponse({"message": "Payment success", "resultCode": 0})
     else:
         failed_status = StatusMaster.objects.filter(status_code=3).first()  # 3 = Thanh toán thất bại
@@ -290,7 +298,6 @@ def place_order(request):
         # --- Kiểm tra số điện thoại ---
         if not re.match(r"^0[0-9]{9,10}$", phone):
             return JsonResponse({"error": "Số điện thoại không hợp lệ."}, status=400)
-
         # --- Kiểm tra email ---
         try:
             validate_email(email)
@@ -313,27 +320,169 @@ def place_order(request):
             customer.address = address
             customer.note = note
             customer.save()
-
         if order_type == "pickup":
             order_info = f"Nhận tại cửa hàng"
         else:
             order_info = f"Đặt hàng giao tận nơi"
-
         # --- Gọi phương thức thanh toán tương ứng ---
         if payment_method == "COD":
             order = MomoService.pay_cash(request, order_info, customer)
             if email and order:
+                InventoryService.reduce_inventory(order)
                 send_order_email(email, order)
-            return redirect("delivery_info")
-
+            messages.success(request, " Đặt hàng thành công! Cảm ơn bạn đã mua hàng")
+            return redirect("portfolio")
         elif payment_method == "MOMO":
            #return luôn redirect
             return MomoService.create_order_from_cart(request, order_info, customer)
-
         else:
             return JsonResponse({"error": "Phương thức thanh toán không hợp lệ."})
-
-        if email and order:
-            send_order_email(email, order)
-
     return redirect("delivery_info")
+
+
+def search_products_view(request):
+    query = request.GET.get('q', '')
+    products = SearchService.search_products(query)
+
+    context = {
+        'products': products,
+        'query': query
+    }
+    return render(request, 'search_results.html', context)
+#xuất hóa đơn
+def export_invoice(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    details = OrderDetail.objects.filter(order=order)
+
+    pdf_content = generate_invoice(order, details)
+    if not pdf_content:
+        return HttpResponse("Lỗi tạo PDF", status=500)
+
+    # filename dùng order.orderId nếu bạn muốn mã uuid, hoặc order.id
+    filename = f"invoice_{order.orderId if hasattr(order,'orderId') else order.pk}.pdf"
+
+    response = HttpResponse(pdf_content, content_type="application/pdf")
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+#form nhập tồn kho
+
+def nhap_ton_kho(request):
+    materials = Material.objects.all()
+    suppliers = Supplier.objects.all()
+    purchase_orders = PurchaseOrder.objects.filter(status__status_code=7)  # PO đã chấp nhận NCC
+
+    if request.method == "POST":
+        po_id = request.POST.get("po_id")
+        supplier_id = request.POST.get("supplier")
+        items = []
+
+        for material in materials:
+            qty_str = request.POST.get(f"qty_{material.material_id}")
+            try:
+                qty = float(qty_str)
+            except (TypeError, ValueError):
+                qty = 0
+            if qty > 0:
+                items.append({
+                    "material_id": material.material_id,
+                    "quantity": qty
+                })
+
+        if items:
+            stockin = InventoryService.create_stockin(supplier_id, items, po_id=po_id)
+            messages.success(request, f"Đã nhập {len(items)} nguyên liệu vào tồn kho.")
+        else:
+            messages.warning(request, "Không có nguyên liệu nào để nhập.")
+
+        return redirect("/admin/first_app/inventory/")
+
+    return render(request, "admin/nhap_ton_kho.html", {
+        "materials": materials,
+        "suppliers": suppliers,
+        "purchase_orders": purchase_orders
+    })
+#nhà cung cấp
+def dat_don_hang(request):
+    """
+    Cửa hàng tạo PO chờ NCC nhận (không gán supplier ngay)
+    Cho phép order bất kỳ số lượng nguyên liệu nào > 0.
+    """
+    materials = Material.objects.all()
+
+    if request.method == "POST":
+        note = request.POST.get("note", "")
+        items = []
+
+        for m in materials:
+            qty_str = request.POST.get(f"qty_{m.material_id}")
+            try:
+                qty = float(qty_str)
+            except (TypeError, ValueError):
+                qty = 0
+            if qty > 0:
+                items.append({
+                    "material_id": m.material_id,
+                    "quantity": qty
+                })
+
+        if items:
+            # Tạo PO chờ NCC nhận, supplier=None
+            po = PurchaseOrderService.create_purchase_order_waiting(items, note)
+            messages.success(
+                request,
+                f"Đã tạo PO {po.po_id} với {len(items)} nguyên liệu. Nhà cung cấp sẽ nhận đơn và gửi thông báo sau."
+            )
+        else:
+            messages.warning(request, "Không có nguyên liệu nào được chọn.")
+
+        return redirect("/datdonhang/")  # quay lại trang đặt đơn
+
+    return render(request, "admin/dat_don_hang.html", {
+        "materials": materials
+    })
+
+#xác nhận từ củaư hàng gửi email về
+def confirm_purchase_order_view(request, pk):
+    po = get_object_or_404(PurchaseOrder, pk=pk)
+    # Nếu PO chưa có NCC, gán NCC đang đăng nhập
+    if po.supplier is None:
+        po.supplier = request.user.profile
+        po.save()
+    try:
+        PurchaseOrderService.confirm_purchase_order(po)
+        messages.success(request, f"Đơn hàng PO {po.po_id} đã xác nhận. Email đã gửi về cửa hàng.")
+    except Exception as e:
+        messages.error(request, f"Lỗi khi xác nhận đơn hàng: {e}")
+    return redirect('/admin/first_app/purchaseorder/')
+
+#xử lý link chấp nhận từ chối của cửa hàng đối với ncc
+def po_accept(request, token):
+    s = URLSafeSerializer(settings.SECRET_KEY)
+    try:
+        data = s.loads(token)
+        po_id = data['po_id']
+    except BadSignature:
+        return HttpResponse("Link không hợp lệ!", status=400)
+
+    po = get_object_or_404(PurchaseOrder, po_id=po_id)
+    status_accepted = StatusMaster.objects.filter(status_code=7).first()  # Trạng thái 7: Chấp nhận NCC
+    if status_accepted:
+        po.status = status_accepted
+        po.save()
+    return redirect('/admin/first_app/purchaseorder/')  # hoặc page thông báo
+
+def po_reject(request, token):
+    s = URLSafeSerializer(settings.SECRET_KEY)
+    try:
+        data = s.loads(token)
+        po_id = data['po_id']
+    except BadSignature:
+        return HttpResponse("Link không hợp lệ!", status=400)
+
+    po = get_object_or_404(PurchaseOrder, po_id=po_id)
+    status_rejected = StatusMaster.objects.filter(status_code=3).first()  # Trạng thái 3: từ chối NCC
+    if status_rejected:
+        po.status = status_rejected
+        po.save()
+    return redirect('/admin/first_app/purchaseorder/')

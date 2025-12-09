@@ -23,6 +23,19 @@ from first_app.models import Customer
 
 from first_app.services.dashbroad import DashboardService
 from datetime import date
+
+from first_app.models import Inventory
+
+from first_app.models import ProductMaterial
+from first_app.models import Material
+
+from first_app.models import Supplier
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from first_app.models import StockIn
+from first_app.models import StockInDetail
+from first_app.models import PurchaseOrderDetail
+from first_app.models import PurchaseOrder
 NGROK_URL = config('NGROK_URL')
 
 class MyAdminSite(admin.AdminSite):
@@ -35,6 +48,17 @@ class MyAdminSite(admin.AdminSite):
         stats = DashboardService.get_order_stats(months=6)
         extra_context["chart_data"] = stats
         return TemplateResponse(request, "admin/index.html", extra_context)
+
+class SupplierInline(admin.StackedInline):
+    model = Supplier
+    can_delete = False
+    verbose_name_plural = 'Thông tin nhà cung cấp'
+# Custom UserAdmin
+class UserAdmin(BaseUserAdmin):
+    inlines = (SupplierInline,)
+# Hủy đăng ký User mặc định và đăng ký lại với UserAdmin mới
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
 
 @admin.register(TableMaster)
 class TableMasterAdmin(admin.ModelAdmin):
@@ -56,6 +80,76 @@ class TableMasterAdmin(admin.ModelAdmin):
 @admin.register(Categories)
 class CategoriesAdmin(admin.ModelAdmin):
     list_display = ('categories_id', 'categories_name', 'imageUrl')
+
+class StockInDetailInline(admin.TabularInline):
+    model = StockInDetail
+    extra = 0
+    can_delete = False
+    readonly_fields = ('material', 'quantity', 'created_at', 'supplier_name', 'po_id')
+    fields = ('material', 'quantity', 'created_at', 'supplier_name', 'po_id')
+    verbose_name = "Chi tiết nhập kho"
+    verbose_name_plural = "Danh sách chi tiết nhập kho"
+
+    def supplier_name(self, obj):
+        if obj.stockin and obj.stockin.supplier:
+            return obj.stockin.supplier.user.username if obj.stockin.supplier.user else "-"
+        return "-"
+    supplier_name.short_description = "Nhà cung cấp"
+
+    def po_id(self, obj):
+        if obj.stockin and obj.stockin.po:
+            return obj.stockin.po.po_id
+        return "-"
+    po_id.short_description = "PO ID"
+
+@admin.register(StockIn)
+class StockInAdmin(admin.ModelAdmin):
+    list_display = ('stockin_id', 'po', 'supplier', 'created_at')
+    inlines = [StockInDetailInline]
+    # Không hiển thị field StockIn "General"
+    def get_fieldsets(self, request, obj=None):
+        return []
+    # Chỉ xem, không cho sửa StockIn
+    def has_change_permission(self, request, obj=None):
+        return False
+    def has_add_permission(self, request):
+        return False
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+class PurchaseOrderDetailInline(admin.TabularInline):
+    model = PurchaseOrderDetail
+    extra = 0
+    readonly_fields = ('material', 'quantity')
+    can_delete = False
+
+@admin.register(PurchaseOrder)
+class PurchaseOrderAdmin(admin.ModelAdmin):
+    list_display = ('po_id', 'supplier', 'status', 'created_at')
+    inlines = [PurchaseOrderDetailInline]
+    change_form_template = "admin/first_app/purchaseorder/change_form.html"
+
+    def has_change_permission(self, request, obj=None):
+        return False  # nếu chỉ muốn xem, không chỉnh sửa
+    def has_add_permission(self, request):
+        return False
+    def has_delete_permission(self, request, obj=None):
+        return False
+@admin.register(Inventory)
+class InventoryAdmin(admin.ModelAdmin):
+    list_display = ('material', 'quantity', 'min_quantity', 'updated_at')
+
+@admin.register(Material)
+class MaterialAdmin(admin.ModelAdmin):
+    list_display = ('material_id', 'material_name', 'unit')
+
+@admin.register(Supplier)
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ('user', 'phone', 'address')
+
+@admin.register(ProductMaterial)
+class ProductMaterialAdmin(admin.ModelAdmin):
+    list_display = ('product', 'material', 'quantity_required')
 
 @admin.register(ProductMaster)
 class ProductMasterAdmin(admin.ModelAdmin):
@@ -148,28 +242,25 @@ class StatusMasterAdmin(admin.ModelAdmin):
 @admin.register(Customer)
 class CustomerMasterAdmin(admin.ModelAdmin):
     list_display = ('customer_name', 'phone', 'address')
-
 _original_index = admin.site.index
 def custom_admin_index(request, extra_context=None):
     extra_context = extra_context or {}
-
     today = date.today()
-
     # Biểu đồ doanh thu trong tháng hiện tại
     chart_data = DashboardService.get_daily_revenue(month=today.month, year=today.year)
-
     # Thống kê tổng quan
     summary = DashboardService.get_summary()
-
     # Trạng thái đơn hàng
     order_status_data = DashboardService.get_order_status_data()
     # Tổng doanh thu hôm nay
     today_revenue = DashboardService.get_today_revenue()
+    top_products = DashboardService.get_top_selling_products(limit=5)
     # Gộp vào context
     extra_context.update({
         "chart_data": chart_data,
         "order_status_data": order_status_data,
         **summary,
+        "top_products": top_products,
         "today_revenue": today_revenue,
         "current_month_label": today.strftime("Tháng %m/%Y"),
     })

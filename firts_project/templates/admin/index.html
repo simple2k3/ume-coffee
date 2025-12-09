@@ -102,7 +102,7 @@ canvas {
     <div><i class="fas fa-shopping-cart fa-2x"></i></div>
     <div class="info">
       <h3>{{ total_orders|default:"0" }}</h3>
-      <p>Đơn hàng</p>
+      <p>Đơn hàng đang chờ</p>
     </div>
   </a>
 
@@ -129,7 +129,6 @@ canvas {
       <p>Loại sản phẩm</p>
     </div>
   </a>
-
   <!-- Bàn -->
   <a href="{% url 'admin:first_app_tablemaster_changelist' %}" class="card bg-purple" style="text-decoration: none;">
     <div><i class="fas fa-chair fa-2x"></i></div>
@@ -150,6 +149,36 @@ canvas {
     <canvas id="orderStatusChart"></canvas>
   </div>
 </div>
+
+<div class="chart-box" style="width: 100%; max-width: none; margin: 0 50px 60px;">
+    <h3>Sản phẩm bán chạy nhất</h3>
+    <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th>Ảnh</th>
+                <th>Sản phẩm</th>
+                <th>Đã bán</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in top_products %}
+            <tr>
+                <td>
+                    {% if p.image %}
+                        <img src="{{ p.image }}" width="50" />
+                    {% else %}
+                        <span>Không có ảnh</span>
+                    {% endif %}
+                </td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.total_sold }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
 
 <!-- FontAwesome + Chart.js -->
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>

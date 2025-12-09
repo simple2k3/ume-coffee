@@ -16,7 +16,6 @@ class CartService:
                 'quantity': quantity,
                 'imageUrl': imageUrl
             }
-
         # Lưu lại session
         session['cart'] = cart
         session.modified = True
@@ -31,6 +30,7 @@ class CartService:
                 cart[product_code]['quantity'] = quantity
             session['cart'] = cart
             session.modified = True
+
     @staticmethod
     def remove_from_cart(session, product_code):
         cart = session.get('cart', {})

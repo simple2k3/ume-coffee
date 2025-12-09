@@ -5,7 +5,15 @@ from first_app import views
 from django.conf import settings
 from django.conf.urls.static import static
 from first_app.services.payment import MomoService
+from first_app.views import export_invoice
+from first_app.views import nhap_ton_kho
+
+from first_app.views import dat_don_hang
+
 urlpatterns = [
+    #code test
+    # path('', views.test, name='test'),
+    # path('customers/', views.loadcustomer, name='loadcustomer'),
     path('', views.index, name='index'),
     path('admin/', admin.site.urls),
     path('index.html', views.index, name='index_html'),
@@ -24,7 +32,7 @@ urlpatterns = [
     path('cart/', views.cart_view, name='cart'),
     path('cart/add/<str:product_code>/', views.add_to_cart_view, name='add_to_cart_view'),
     path('cart/remove/<str:product_code>/', views.remove_from_cart, name='remove_from_cart'),
-    path('cart/clear/', views.clear_cart, name='clear_cart'),
+
     path('cart/update/<str:product_code>/', views.update_quantity_view, name='update_quantity'),
     #thanh toán
     path('payment/momo/', views.momo_payment, name='momo_payment'),
@@ -37,7 +45,19 @@ urlpatterns = [
 
     path('order-detail/<str:order_id>/', views.order_detail_qr, name='order_detail'),
 
+    path('search/', views.search_products_view, name='search_products'),
 
+    #xuất hóa đơn
+    path('export-invoice/<int:pk>/', export_invoice, name='export_invoice'),
+    #nhập tồn kho
+    path("nhap-ton-kho/", nhap_ton_kho, name="nhap_ton_kho"),
+    #nhập đơn hàng ncc
+    path('datdonhang/', dat_don_hang, name='dat_don_hang'),
+    #xác nhận đơn hàng từ ncc
+    path('purchaseorder/<int:pk>/confirm/', views.confirm_purchase_order_view, name='confirm_purchase_order'),
+    #xử lý chấp nhận- hủy đơn từ email
+    path('po/accept/<str:token>/', views.po_accept, name='po_accept'),
+    path('po/reject/<str:token>/', views.po_reject, name='po_reject'),
 ]
 
 if settings.DEBUG:

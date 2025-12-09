@@ -8,7 +8,6 @@ class CategoriesService:
     def get_product_detail(product_code):
         product = get_object_or_404(ProductMaster, product_code=product_code)
         return product
-
     @staticmethod
     def get_suggested_products(product):# sản phẩm gợi ý
         if not product.category:
