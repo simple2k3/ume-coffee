@@ -8,9 +8,7 @@ from first_app.models import Categories, TableMaster, StatusMaster
 
 from first_app.models import OrderDetail
 
-
 class DashboardService:
-
     @staticmethod
     def get_daily_revenue(month=None, year=None):
         """Doanh thu theo ngày của tháng được chọn (mặc định là tháng hiện tại)."""
@@ -36,10 +34,8 @@ class DashboardService:
                     created_at__lt=end_of_day
                 ).aggregate(total_amount=Sum("amount"))["total_amount"] or 0
             )
-
             labels.append(current_date.strftime("%d/%m"))
             values.append(float(total))
-
         return {"labels": labels, "values": values}
 
     @staticmethod
@@ -63,22 +59,18 @@ class DashboardService:
             "pending": Order.objects.filter(status=1).count(),
             "cancelled": Order.objects.filter(status=3).count(),
         }
-
     @staticmethod
     def get_today_revenue(month=None, year=None):
         today = timezone.localdate()
         month = month or today.month
         year = year or today.year
-
         # Ngày bắt đầu tháng
         start_of_month = timezone.make_aware(timezone.datetime(year, month, 1, 0, 0, 0))
-
         # Ngày kết thúc tháng
         if month == 12:
             end_of_month = timezone.make_aware(timezone.datetime(year + 1, 1, 1, 0, 0, 0))
         else:
             end_of_month = timezone.make_aware(timezone.datetime(year, month + 1, 1, 0, 0, 0))
-
         total = (
                 Order.objects.filter(
                     status=2,  # Hoàn tất
@@ -107,14 +99,11 @@ class DashboardService:
             "imageUrl",
             "price",
         )
-
         # 4. Map product_code -> total_sold
         sold_map = {item["product"]: item["total_sold"] for item in qs}
-
         # 5. Chuẩn hóa dữ liệu theo đúng thứ tự top
         product_map = {p.product_code: p for p in products}
         result = []
-
         for code in product_codes_ordered:
             p = product_map.get(code)
             if p:

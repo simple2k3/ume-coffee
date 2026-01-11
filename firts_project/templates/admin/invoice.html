@@ -35,7 +35,13 @@
     {% endfor %}
   </tbody>
 </table>
-
+{% if qr_base64 %}
+<div class="qr-code">
+  <img src="data:image/png;base64,{{ qr_base64 }}"
+       alt="QR Code">
+  <p>Quét mã để xem chi tiết đơn hàng</p>
+</div>
+{% endif %}
 <p class="total">Tổng tiền: {{ order.amount|floatformat:0 }}₫</p>
 
 </body>

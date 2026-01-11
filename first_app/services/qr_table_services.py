@@ -1,5 +1,6 @@
 import qrcode
 from io import BytesIO
+import base64
 
 from django.core.files.base import ContentFile
 class TableServices:
@@ -24,3 +25,10 @@ class TableServices:
         image_bytes = buffer.getvalue()
         buffer.close()
         return ContentFile(image_bytes, name='order_qr.png')
+
+    @staticmethod
+    def generate_qr_base64(data: str):
+        qr = qrcode.make(data)
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
+        return base64.b64encode(buffer.getvalue()).decode()

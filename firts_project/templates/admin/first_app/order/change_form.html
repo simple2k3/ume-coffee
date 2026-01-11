@@ -142,12 +142,12 @@
       </tbody>
     </table>
 
-    {% if original.qr_code %}
-    <div class="qr-code">
-      <img src="{{ original.qr_code.url }}" alt="QR Code">
-      <p>Quét mã để xem chi tiết đơn hàng</p>
-    </div>
-    {% endif %}
+        {% if original.qr_code %}
+        <div class="qr-code">
+          <img src="{{ original.qr_code.url }}" alt="QR Code">
+          <p>Quét mã để xem chi tiết đơn hàng</p>
+        </div>
+        {% endif %}
   </div>
 
   <!-- THÔNG TIN KHÁCH HÀNG -->
@@ -164,12 +164,10 @@
 
 </div>
 
-<!-- NÚT XUẤT HÓA ĐƠN RIÊNG, NỀN TRẮNG, SIÊU ĐẸP -->
 <div class="export-section">
 <a href="{% url 'export_invoice' pk=original.pk %}" class="export-btn" target="_blank">
   Xuất hóa đơn PDF
 </a>
-
 </div>
 
 {% endblock %}

@@ -1,3 +1,4 @@
+from django.core.validators import RegexValidator
 from django.db import models
 import uuid
 from django.contrib.auth.models import User
@@ -24,21 +25,17 @@ class Categories(models.Model):
 
 class ProductMaster(models.Model):
     product_code = models.CharField(max_length=50, primary_key=True)
-    product_name = models.CharField(max_length=255)
+    product_name = models.CharField(max_length=255,validators=[RegexValidator( regex=r'[A-Za-zÀ-ỹ]',)])
     imageUrl = models.URLField(max_length=500, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     price = models.FloatField(default=0)
     is_active = models.BooleanField(default=True)
     update_by = models.CharField(max_length=100)
     update_time = models.DateTimeField()
-    category = models.ForeignKey(Categories,on_delete=models.CASCADE,related_name='products',
-        null=True,
-        blank=True
-    )
+    category = models.ForeignKey(Categories,on_delete=models.CASCADE,related_name='products',null=True,blank=True)
 
     def __str__(self):
         return self.product_name
-
 
 class TableMaster(models.Model):
     id = models.AutoField(primary_key=True)
@@ -47,7 +44,6 @@ class TableMaster(models.Model):
 
     def __str__(self):
         return self.table_name
-
 
 class Order(models.Model):
     id=models.AutoField(primary_key=True)
@@ -64,7 +60,9 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.ForeignKey(StatusMaster,on_delete=models.SET_NULL,null=True,blank=True,related_name='orders')
     qr_code = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
+
     customer = models.ForeignKey('Customer',on_delete=models.SET_NULL,null=True,blank=True,related_name='orders'
+
     )
     def __str__(self):
         return f"Order {self.orderId} - {self.status}"
@@ -87,9 +85,8 @@ class Customer(models.Model):
     customer_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=15,unique=True)
     address = models.CharField(max_length=255, blank=True, null=True)
-    email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
+    email = models.EmailField(max_length=100, blank=True, null=True)
     note = models.CharField(max_length=255, blank=True, null=True)
-
     def __str__(self):
         return f"{self.customer_name} ({self.phone})"
 
@@ -140,7 +137,7 @@ class PurchaseOrder(models.Model):
     def __str__(self):
         if self.supplier and self.supplier.user:
             return f"PO {self.po_id} - {self.supplier.user.username}"
-        return f"PO {self.po_id} - Chưa có NCC"
+        return f"PO {self.po_id} - Chưa có nhà cung cấp"
 
 class PurchaseOrderDetail(models.Model):
     po = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='details')
@@ -152,9 +149,7 @@ class PurchaseOrderDetail(models.Model):
 class StockIn(models.Model):
     stockin_id = models.AutoField(primary_key=True)
     po = models.ForeignKey(PurchaseOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='stockins')
-    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
     def __str__(self):
         return f"StockIn {self.stockin_id}"
 

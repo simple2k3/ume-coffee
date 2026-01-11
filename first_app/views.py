@@ -6,6 +6,7 @@ from datetime import timezone
 
 from django.conf import settings
 from django.core.signing import BadSignature
+from django.db import transaction
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 import uuid
@@ -228,53 +229,57 @@ def momo_return(request):
             messages.error(request, "Không tìm thấy đơn hàng.")
     # 👉 Sau khi xử lý xong, quay lại trang chủ (index)
     return redirect("index")
+
+
 @csrf_exempt
 def momo_ipn(request):
     if request.method != "POST":
-        return JsonResponse({"message": "Invalid request method"}, status=405)
-    data = json.loads(request.body.decode('utf-8'))
-    print(" IPN nhận từ MoMo:", data)
+        return JsonResponse({"message": "Phương thức không hợp lệ"}, status=405)
 
-    order_id = data.get("orderId")
-    result_code = data.get("resultCode")
-    amount = data.get("amount")
-
-    # Tạo chuỗi để xác minh chữ ký
-    raw_signature = (
-        f"accessKey={MomoService.ACCESS_KEY}&amount={amount}&extraData={data.get('extraData','')}"
-        f"&message={data.get('message','')}&orderId={order_id}&orderInfo={data.get('orderInfo','')}"
-        f"&orderType={data.get('orderType','')}&partnerCode={data.get('partnerCode','')}"
-        f"&payType={data.get('payType','')}&requestId={data.get('requestId','')}"
-        f"&responseTime={data.get('responseTime','')}&resultCode={result_code}"
-        f"&transId={data.get('transId','')}"
-    )
-    generated_signature = hmac.new(
-        MomoService.SECRET_KEY.encode('utf-8'),
-        raw_signature.encode('utf-8'),
-        hashlib.sha256
-    ).hexdigest()
-    if generated_signature != data.get("signature"):
-        return JsonResponse({"message": "Invalid signature"}, status=400)
     try:
-        order = Order.objects.get(orderId=order_id)
+        data = json.loads(request.body.decode('utf-8'))
+        order_id = data.get("orderId")
+        result_code = int(data.get("resultCode", -1))  # Ép kiểu về số nguyên
+
+        # 1. Ủy quyền kiểm tra chữ ký cho Service (Code sạch hơn)
+        if not MomoService.verify_signature(data):
+            return JsonResponse({"message": "Chữ ký không hợp lệ"}, status=400)
+
+        # 2. Lấy đơn hàng và dữ liệu liên quan trong 1 lần truy vấn
+        order = Order.objects.select_related('status', 'customer').get(orderId=order_id)
+
+        # 3. Sử dụng Transaction để đảm bảo an toàn dữ liệu
+        with transaction.atomic():
+            if result_code == 0:
+                # kiểm tra nếu đã thanh toán rồi thì không làm lại không bị trừ lặp
+                if order.status.status_code != 2:
+                    success_status = StatusMaster.objects.get(status_code=2)
+                    order.status = success_status
+                    order.save()
+
+                    # Trừ tồn kho
+                    InventoryService.reduce_inventory(order)
+
+                    # Gửi email (Bọc trong try-except để nếu lỗi email không làm hỏng đơn hàng)
+                    if order.customer and order.customer.email:
+                        try:
+                            send_order_email(order.customer.email, order)
+                        except Exception as e:
+                            print(f"Lỗi gửi email: {e}")
+            else:
+                # Thanh toán thất bại
+                if order.status.status_code not in [2, 3]:
+                    order.status = StatusMaster.objects.get(status_code=3)
+                    order.save()
+
+        # Trả về resultCode: 0 để MoMo biết đã xử lý xong và ngừng gửi IPN
+        return JsonResponse({"message": "Đã nhận dữ liệu", "resultCode": 0})
+
     except Order.DoesNotExist:
-        return JsonResponse({"message": "Order not found"}, status=404)
-    # Nếu thanh toán thành công
-    if result_code == 0:
-        success_status = StatusMaster.objects.filter(status_code=2).first()
-        order.status = success_status
-        order.save()
-        InventoryService.reduce_inventory(order)
-        # --- Gửi email tại đây ---
-        customer = order.customer
-        if customer and customer.email:
-            send_order_email(customer.email, order)
-        return JsonResponse({"message": "Payment success", "resultCode": 0})
-    else:
-        failed_status = StatusMaster.objects.filter(status_code=3).first()  # 3 = Thanh toán thất bại
-        order.status = failed_status
-        order.save()
-        return JsonResponse({"message": "Payment failed", "resultCode": result_code})
+        return JsonResponse({"message": "Đơn hàng không tồn tại"}, status=404)
+    except Exception as e:
+        print(f"Lỗi IPN: {str(e)}")
+        return JsonResponse({"message": "Lỗi xử lý nội bộ"}, status=500)
 
 #lấy thông tin hiện lên form
 def delivery_info(request):
@@ -295,15 +300,21 @@ def place_order(request):
         note = request.POST.get("note")
         payment_method = request.POST.get("payment_method")
         order_type = request.POST.get("order_type")
-        # --- Kiểm tra số điện thoại ---
-        if not re.match(r"^0[0-9]{9,10}$", phone):
-            return JsonResponse({"error": "Số điện thoại không hợp lệ."}, status=400)
-        # --- Kiểm tra email ---
-        try:
-            validate_email(email)
-        except ValidationError:
-            return JsonResponse({"error": "Email không hợp lệ."}, status=400)
-        # --- Lưu hoặc tạo Customer ---
+
+        # --- Validate SĐT ---
+        if not phone or not re.match(r"^0\d{9,10}$", phone):
+            messages.error(request, "Số điện thoại không đúng định dạng")
+            return redirect("delivery_info")
+
+        # --- Validate email (chỉ kiểm tra định dạng) ---
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                messages.error(request, "Email không đúng định dạng")
+                return redirect("delivery_info")
+
+        # --- LẤY HOẶC TẠO CUSTOMER BẰNG SĐT ---
         customer, created = Customer.objects.get_or_create(
             phone=phone,
             defaults={
@@ -313,37 +324,44 @@ def place_order(request):
                 "note": note,
             }
         )
-        # Nếu khách hàng đã tồn tại -> cập nhật lại thông tin
+
+        # --- KHÁCH CŨ → UPDATE ---
         if not created:
             customer.customer_name = name
             customer.email = email
             customer.address = address
             customer.note = note
             customer.save()
-        if order_type == "pickup":
-            order_info = f"Nhận tại cửa hàng"
-        else:
-            order_info = f"Đặt hàng giao tận nơi"
-        # --- Gọi phương thức thanh toán tương ứng ---
+
+        # --- Thông tin đơn ---
+        order_info = (
+            "Nhận tại cửa hàng"
+            if order_type == "pickup"
+            else "Đặt hàng giao tận nơi"
+        )
+
+        # --- Thanh toán ---
         if payment_method == "COD":
             order = MomoService.pay_cash(request, order_info, customer)
-            if email and order:
-                InventoryService.reduce_inventory(order)
-                send_order_email(email, order)
-            messages.success(request, " Đặt hàng thành công! Cảm ơn bạn đã mua hàng")
-            return redirect("portfolio")
-        elif payment_method == "MOMO":
-           #return luôn redirect
-            return MomoService.create_order_from_cart(request, order_info, customer)
-        else:
-            return JsonResponse({"error": "Phương thức thanh toán không hợp lệ."})
-    return redirect("delivery_info")
 
+            if email and order:
+                send_order_email(email, order)
+
+            messages.success(request, "Đặt hàng thành công!")
+            return redirect("portfolio")
+
+        elif payment_method == "MOMO":
+            return MomoService.create_order_from_cart(request, order_info, customer)
+
+        else:
+            messages.error(request, "Phương thức thanh toán không hợp lệ")
+            return redirect("delivery_info")
+
+    return redirect("delivery_info")
 
 def search_products_view(request):
     query = request.GET.get('q', '')
     products = SearchService.search_products(query)
-
     context = {
         'products': products,
         'query': query
@@ -369,18 +387,16 @@ def export_invoice(request, pk):
 
 def nhap_ton_kho(request):
     materials = Material.objects.all()
-    suppliers = Supplier.objects.all()
-    purchase_orders = PurchaseOrder.objects.filter(status__status_code=7)  # PO đã chấp nhận NCC
-
+    # Chỉ lấy các đơn hàng đang ở trạng thái 'Đã duyệt/Chờ nhập kho' (status_code=7)
+    purchase_orders = PurchaseOrder.objects.filter(status__status_code=7)
     if request.method == "POST":
         po_id = request.POST.get("po_id")
-        supplier_id = request.POST.get("supplier")
         items = []
-
+        # Thu thập dữ liệu từ các ô input số lượng
         for material in materials:
             qty_str = request.POST.get(f"qty_{material.material_id}")
             try:
-                qty = float(qty_str)
+                qty = float(qty_str) if qty_str else 0
             except (TypeError, ValueError):
                 qty = 0
             if qty > 0:
@@ -388,18 +404,18 @@ def nhap_ton_kho(request):
                     "material_id": material.material_id,
                     "quantity": qty
                 })
-
         if items:
-            stockin = InventoryService.create_stockin(supplier_id, items, po_id=po_id)
-            messages.success(request, f"Đã nhập {len(items)} nguyên liệu vào tồn kho.")
+            try:
+                # GỌI SERVICE: Chỉ truyền items và po_id
+                InventoryService.create_stockin(items=items, po_id=po_id)
+                messages.success(request, f"Đã nhập kho thành công cho đơn PO {po_id}")
+                return redirect("/admin/first_app/inventory/") # Hoặc link danh sách kho của bạn
+            except Exception as e:
+                messages.error(request, f"Lỗi: {str(e)}")
         else:
-            messages.warning(request, "Không có nguyên liệu nào để nhập.")
-
-        return redirect("/admin/first_app/inventory/")
-
+            messages.warning(request, "Vui lòng nhập ít nhất một nguyên liệu có số lượng > 0.")
     return render(request, "admin/nhap_ton_kho.html", {
         "materials": materials,
-        "suppliers": suppliers,
         "purchase_orders": purchase_orders
     })
 #nhà cung cấp

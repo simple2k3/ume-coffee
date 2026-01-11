@@ -96,7 +96,6 @@
 
   <div class="wrapper">
     <h2>Chi tiết đơn hàng #{{ order.id }}</h2>
-
     <div class="container">
       <!-- Thông tin khách hàng -->
       <div class="card">
@@ -108,7 +107,6 @@
           <p><strong>Địa chỉ:</strong> {{ order.customer.address }}</p>
         </div>
       </div>
-
       <!-- Thông tin đơn hàng -->
       <div class="card">
         <h3>Thông tin đơn hàng</h3>
@@ -118,7 +116,6 @@
           <p><strong>Ghi chú:</strong> {{ order.customer.note|default:"(Không có)" }}</p>
         </div>
       </div>
-
       <!-- Danh sách sản phẩm -->
       <div class="card" style="flex: 100%;">
         <h3>Danh sách sản phẩm</h3>

@@ -36,13 +36,15 @@ from first_app.models import StockIn
 from first_app.models import StockInDetail
 from first_app.models import PurchaseOrderDetail
 from first_app.models import PurchaseOrder
+from django.db.models import Sum
+from first_app.services.inventory_service import InventoryService
+
 NGROK_URL = config('NGROK_URL')
 
 class MyAdminSite(admin.AdminSite):
     site_header = "Trang quản trị hệ thống"
     site_title = "Quản trị"
     index_title = "Dashboard"
-
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
         stats = DashboardService.get_order_stats(months=6)
@@ -59,6 +61,7 @@ class UserAdmin(BaseUserAdmin):
 # Hủy đăng ký User mặc định và đăng ký lại với UserAdmin mới
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+
 
 @admin.register(TableMaster)
 class TableMasterAdmin(admin.ModelAdmin):
@@ -85,8 +88,8 @@ class StockInDetailInline(admin.TabularInline):
     model = StockInDetail
     extra = 0
     can_delete = False
-    readonly_fields = ('material', 'quantity', 'created_at', 'supplier_name', 'po_id')
-    fields = ('material', 'quantity', 'created_at', 'supplier_name', 'po_id')
+    readonly_fields = ('material', 'quantity', 'created_at', 'po_id')
+    fields = ('material', 'quantity', 'created_at', 'po_id')
     verbose_name = "Chi tiết nhập kho"
     verbose_name_plural = "Danh sách chi tiết nhập kho"
 
@@ -95,7 +98,6 @@ class StockInDetailInline(admin.TabularInline):
             return obj.stockin.supplier.user.username if obj.stockin.supplier.user else "-"
         return "-"
     supplier_name.short_description = "Nhà cung cấp"
-
     def po_id(self, obj):
         if obj.stockin and obj.stockin.po:
             return obj.stockin.po.po_id
@@ -104,7 +106,7 @@ class StockInDetailInline(admin.TabularInline):
 
 @admin.register(StockIn)
 class StockInAdmin(admin.ModelAdmin):
-    list_display = ('stockin_id', 'po', 'supplier', 'created_at')
+    list_display = ('stockin_id', 'po', 'created_at')
     inlines = [StockInDetailInline]
     # Không hiển thị field StockIn "General"
     def get_fieldsets(self, request, obj=None):
@@ -128,7 +130,6 @@ class PurchaseOrderAdmin(admin.ModelAdmin):
     list_display = ('po_id', 'supplier', 'status', 'created_at')
     inlines = [PurchaseOrderDetailInline]
     change_form_template = "admin/first_app/purchaseorder/change_form.html"
-
     def has_change_permission(self, request, obj=None):
         return False  # nếu chỉ muốn xem, không chỉnh sửa
     def has_add_permission(self, request):
@@ -143,6 +144,10 @@ class InventoryAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
     list_display = ('material_id', 'material_name', 'unit')
 
+@admin.register(StatusMaster)
+class StatusMasterAdmin(admin.ModelAdmin):
+    list_display = ('status_code', 'status_name')
+
 @admin.register(Supplier)
 class SupplierAdmin(admin.ModelAdmin):
     list_display = ('user', 'phone', 'address')
@@ -153,7 +158,11 @@ class ProductMaterialAdmin(admin.ModelAdmin):
 
 @admin.register(ProductMaster)
 class ProductMasterAdmin(admin.ModelAdmin):
-    list_display = ('product_code', 'product_name', 'description', 'price', 'is_active', 'update_by', 'update_time')
+    list_display = ('product_code', 'product_name', 'description', 'price', 'is_active', 'update_by', 'update_time', 'total_sold')
+    def total_sold(self, obj):
+        total = OrderDetail.objects.filter(product=obj).aggregate(total=Sum('quantity'))['total']
+        return total or None
+    total_sold.short_description = 'Đã bán'
 
 class OrderDetailInline(admin.TabularInline):
     model = OrderDetail
@@ -176,12 +185,35 @@ class OrderDetailInline(admin.TabularInline):
         return obj.order.customer.address if obj.order and obj.order.customer else "-"
     customer_address.short_description = "Địa chỉ"
 
+class PaymentStatusFilter(admin.SimpleListFilter):
+    title = 'Chọn Trạng Thái Thanh Toán'
+    parameter_name = 'payment_status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('paid', 'Đã thanh toán'),
+            ('unpaid', 'Chưa thanh toán'),
+        )
+    def queryset(self, request, queryset):
+        if self.value() == 'paid':
+            return queryset.filter(status__status_code=2)
+        if self.value() == 'unpaid':
+            return queryset.filter(status__status_code=1)
+        return queryset
+
+
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'orderId', 'partnerCode', 'amount', 'orderInfo', 'created_at', 'status', 'table', 'customer', 'qr_code')
     actions = ['updatestatus', 'destroyorder', 'print_qr_action']
     inlines = [OrderDetailInline]
     change_form_template = "admin/first_app/order/change_form.html"
+    list_filter = (
+        'table',
+        PaymentStatusFilter,
+    )
     def get_fieldsets(self, request, obj=None):
         return []
     def has_change_permission(self, request, obj=None):
@@ -190,20 +222,24 @@ class OrderAdmin(admin.ModelAdmin):
         return False
     @admin.action(description="Đã thanh toán")
     def updatestatus(self, request, queryset):
+        # Lấy trạng thái "Đã thanh toán"
         paid_status = StatusMaster.objects.filter(status_code=2).first()
         if not paid_status:
-            self.message_user(request, "Không tìm thấy trạng thái có status_code = 2 trong bảng StatusMaster.",level='error')
+            self.message_user(request, "Lỗi: Chưa cấu hình status_code = 2", level='error')
             return
-        updated = 0
+        updated_count = 0
         for order in queryset:
+            # CHỈ xử lý những đơn đang ở trạng thái Chờ (code 1)
             if order.status and order.status.status_code == 1:
                 order.status = paid_status
                 order.save()
-                updated += 1
-        if updated == 0:
-            self.message_user(request, "Không thể thanh toán đơn hàng",level='warning')
+                InventoryService.reduce_inventory(order)
+                updated_count += 1
+        if updated_count == 0:
+            self.message_user(request, "Không có đơn hàng nào hợp lệ để thanh toán (Phải ở trạng thái Chờ).",level='warning')
         else:
-            self.message_user(request,f"Đã cập nhật {updated} đơn hàng,đơn hàng đã được bạn thanh toán ")
+            self.message_user(request, f"Đã xác nhận thanh toán và trừ tồn kho cho {updated_count} đơn hàng.")
+
 
     @admin.action(description="Hủy đơn hàng")
     def destroyorder(self, request, queryset):
@@ -235,10 +271,6 @@ class OrderAdmin(admin.ModelAdmin):
             self.message_user(request,
                               f"Đã hủy {updated} đơn hàng")
 
-@admin.register(StatusMaster)
-class StatusMasterAdmin(admin.ModelAdmin):
-    list_display = ('status_code', 'status_name', 'update_by', 'update_time')
-
 @admin.register(Customer)
 class CustomerMasterAdmin(admin.ModelAdmin):
     list_display = ('customer_name', 'phone', 'address')
@@ -264,9 +296,39 @@ def custom_admin_index(request, extra_context=None):
         "today_revenue": today_revenue,
         "current_month_label": today.strftime("Tháng %m/%Y"),
     })
-
     context = dict(admin.site.each_context(request), **extra_context)
     return TemplateResponse(request, "admin/index.html", context)
-
 #  Ghi đè trang index mặc định
 admin.site.index = custom_admin_index
+#
+# def custom_admin_index(request, extra_context=None):
+#     # Không phải superuser → KHÔNG xem dashboard
+#     if not request.user.is_superuser:
+#         # redirect về admin index mặc định (không dashboard)
+#         return _original_index(request)
+#
+#     #Superuser → dashboard
+#     extra_context = extra_context or {}
+#     today = date.today()
+#
+#     chart_data = DashboardService.get_daily_revenue(
+#         month=today.month,
+#         year=today.year
+#     )
+#     summary = DashboardService.get_summary()
+#     order_status_data = DashboardService.get_order_status_data()
+#     today_revenue = DashboardService.get_today_revenue()
+#     top_products = DashboardService.get_top_selling_products(limit=5)
+#
+#     extra_context.update({
+#         "chart_data": chart_data,
+#         "order_status_data": order_status_data,
+#         **summary,
+#         "top_products": top_products,
+#         "today_revenue": today_revenue,
+#     })
+#     context = dict(admin.site.each_context(request), **extra_context)
+#     return TemplateResponse(request, "admin/index.html", context)
+#
+# admin.site.index = custom_admin_index
+

@@ -6,46 +6,46 @@
 <form method="post">
   {% csrf_token %}
 
-  <label><strong>Nhà cung cấp:</strong></label>
-  <select name="supplier" required style="padding:6px; margin-bottom:20px;">
-    {% for s in suppliers %}
-      <option value="{{ s.id }}">{{ s.user.username }} - {{ s.phone }}</option>
-    {% endfor %}
-  </select>
-<label><strong>Chọn đơn PO:</strong></label>
-<select name="po_id" required style="padding:6px; margin-bottom:20px;">
-  {% for po in purchase_orders %}
-    <option value="{{ po.po_id }}">
-      PO {{ po.po_id }} -
-      {% if po.supplier and po.supplier.user %}{{ po.supplier.user.username }}{% else %}Chưa có NCC{% endif %}
-    </option>
-  {% endfor %}
-</select>
-  <table class="table" style="width:100%; margin-top:20px;">
+  <div style="margin-bottom: 20px;">
+    <label><strong>Chọn đơn PO cần nhập:</strong></label><br>
+    <select name="po_id" required style="padding:8px; width: 400px; margin-top: 5px;">
+      <option value="">-- Chọn đơn hàng PO (Sẽ tự động xác định Nhà cung cấp) --</option>
+      {% for po in purchase_orders %}
+        <option value="{{ po.po_id }}">
+          PO {{ po.po_id }} - NCC: {{ po.supplier.user.username|default:"N/A" }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <table class="table" style="width:100%; border-collapse: collapse;">
     <thead>
-      <tr>
-        <th>Nguyên liệu</th>
-        <th>Tồn hiện tại</th>
-        <th>Số lượng nhập</th>
+      <tr style="background: #f4f4f4;">
+        <th style="padding: 10px; border: 1px solid #ddd;">Nguyên liệu</th>
+        <th style="padding: 10px; border: 1px solid #ddd;">Tồn hiện tại</th>
+        <th style="padding: 10px; border: 1px solid #ddd;">Số lượng nhập</th>
       </tr>
     </thead>
 
     <tbody>
       {% for m in materials %}
       <tr>
-        <td>{{ m.material_name }}</td>
-        <td>{{ m.inventory.quantity|default:"0" }}</td>
-       <td>
-          <input type="number" step="0.1" min="0" name="qty_{{ m.material_id }}" style="width:80px;">
+        <td style="padding: 10px; border: 1px solid #ddd;">{{ m.material_name }}</td>
+        <td style="padding: 10px; border: 1px solid #ddd;">{{ m.inventory.quantity|default:"0" }}</td>
+        <td style="padding: 10px; border: 1px solid #ddd;">
+          <input type="number" step="0.1" min="0" name="qty_{{ m.material_id }}" placeholder="0" style="width:100px; padding: 5px;">
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <button type="submit" class="button button-success" style="margin-top:20px;">
-    Lưu phiếu nhập
-  </button>
+  <div style="margin-top: 20px;">
+    <button type="submit" class="button" style="background: #447e9b; color: white; padding: 10px 20px; border: none; cursor: pointer;">
+      Xác nhận nhập kho
+    </button>
+    <a href="javascript:history.back()" style="margin-left: 10px;">Hủy bỏ</a>
+  </div>
 
 </form>
 {% endblock %}

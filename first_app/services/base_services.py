@@ -13,11 +13,6 @@ class SearchService:
         return text_no_accents.lower()
     @staticmethod
     def search_products(query: str):
-        """
-        Tìm kiếm sản phẩm theo tên:
-        - Nếu query để trống, trả về tất cả sản phẩm
-        - Nếu query có hoặc không dấu, vẫn tìm được sản phẩm tương ứng
-        """
         if not query:
             return ProductMaster.objects.all()
         # Chuẩn hóa query để so sánh
@@ -33,3 +28,22 @@ class SearchService:
                 matched_products.append(product)
 
         return matched_products
+    #   <!--search-->
+    # <form method="get" action="{% url 'search_products' %}" class="search-form d-flex align-items-center me-3">
+    #      <input type="text" name="q" class="form-control search-input" placeholder="Tìm kiếm cà phê..." value="{{ request.GET.q|default:'' }}">
+    #      <button type="submit" class="btn btn-dark ms-2">
+    #        <i class="bi bi-search"></i>
+    #      </button>
+    # </form>
+
+#     < a href = "#"
+#     class ="bell-icon text-dark position-relative dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" >
+#     < i
+#     class ="bi bi-bell fs-4" > < / i >
+#     { % if notification_count > 0 %}
+#     < span
+#     class ="cart-badge position-absolute top-0 start-100 translate-middle rounded-circle bg-warning text-dark fw-bold" >
+#     {{notification_count}}
+# < / span >
+# { % endif %}
+# < / a >

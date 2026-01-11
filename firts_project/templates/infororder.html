@@ -2,12 +2,19 @@
 {% load static %}
 
 {% block title %}Thông tin giao hàng{% endblock %}
-
 {% block content %}
 <div class="container py-5">
   <h2 class="text-center mb-4">Thông tin giao hàng</h2>
 
   <!-- Form bao cả 2 cột để tất cả input đều gửi lên cùng lúc -->
+    {% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
 <form method="post" action="{% url 'place_order' %}" class="row g-3">
     {% csrf_token %}
 

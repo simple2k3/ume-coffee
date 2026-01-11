@@ -1,11 +1,15 @@
 import pdfkit
 from django.template.loader import render_to_string
 from django.conf import settings
-
+# from first_app.services.qr_table_services import TableServices
 def generate_invoice(order, details):
+    # qr_data = f"ORDER:{order.pk}"
+    # qr_base64 = TableServices.generate_qr_base64(qr_data)
+
     html = render_to_string("admin/invoice.html", {
         "order": order,
-        "details": details
+        "details": details,
+
     })
 
     # nếu bạn đã cấu hình settings.PDFKIT_CONFIG thì dùng settings, nếu không dùng đường dẫn cứng dưới đây

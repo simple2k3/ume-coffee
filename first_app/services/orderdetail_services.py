@@ -1,11 +1,9 @@
 from first_app.models import Order
-
 class NotificationService:
     @staticmethod
     def get_recent_notifications(request): #hiện thông tin chi tiết đơn hàng của người dùng
         # Lấy danh sách order ID của máy này từ session
         order_ids = request.session.get("orders", [])
-
         if not order_ids:
             return []
         # Lọc các order theo ID đã lưu trong session, sắp xếp mới nhất trước
@@ -15,7 +13,6 @@ class NotificationService:
             .filter(id__in=order_ids)
             .order_by('-created_at')
         )
-
         notifications = []
         for order in orders:
             notifications.append({

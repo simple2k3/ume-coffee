@@ -94,7 +94,9 @@ LANGUAGE_CODE = "vi"
 TIME_ZONE = "Asia/Ho_Chi_Minh"
 USE_I18N = True
 USE_TZ = True
-
+# THOUSAND_SEPARATOR = '.'# định dạnh tách dấu tiền tệ
+# NUMBER_GROUPING = 3
+# DECIMAL_SEPARATOR = ','
 # Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [STATIC_DIR]

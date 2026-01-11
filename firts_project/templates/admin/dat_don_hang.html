@@ -14,6 +14,7 @@
       <tr style="background:#f0f0f0;">
         <th style="padding:8px; border:1px solid #ccc;">Nguyên liệu</th>
         <th style="padding:8px; border:1px solid #ccc;">Số lượng đặt</th>
+          <th style="padding:8px; border:1px solid #ccc;">Đơn vị</th>
       </tr>
     </thead>
     <tbody>
@@ -23,6 +24,7 @@
         <td style="padding:8px; border:1px solid #ccc;">
           <input type="number" step="0.1" min="0" name="qty_{{ m.material_id }}" style="width:80px;">
         </td>
+          <td style="padding:8px; border:1px solid #ccc;">{{ m.unit }}</td>
       </tr>
       {% endfor %}
     </tbody>
