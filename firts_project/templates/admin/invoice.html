@@ -9,6 +9,11 @@
     th, td { border: 1px solid #ccc; padding: 10px; }
     th { background: #f2f2f2; }
     .total { margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; color: #e74c3c; }
+.qr-img {
+    width: 100px;
+    height: 100px;
+}
+}
   </style>
 </head>
 <body>
@@ -19,7 +24,7 @@
 <p><strong>Khách hàng:</strong> {{ order.customer.customer_name }}</p>
 <p><strong>SĐT:</strong> {{ order.customer.phone }}</p>
 <p><strong>Địa chỉ:</strong> {{ order.customer.address }}</p>
-
+<p><strong>Ghi chú:</strong> <span>{{ order.customer.note|default:"Không có ghi chú" }}</span></p>
 <h3>Danh sách sản phẩm</h3>
 <table>
   <thead>
@@ -38,7 +43,9 @@
 {% if qr_base64 %}
 <div class="qr-code">
   <img src="data:image/png;base64,{{ qr_base64 }}"
-       alt="QR Code">
+       alt="QR Code"
+       class="qr-img"
+  >
   <p>Quét mã để xem chi tiết đơn hàng</p>
 </div>
 {% endif %}

@@ -1,6 +1,8 @@
 # admin.py
+from django.conf import settings
 from django.contrib import admin
 from django.core.files.base import ContentFile
+from django.forms import BaseInlineFormSet
 from django.http import HttpResponse
 import zipfile
 from io import BytesIO
@@ -38,7 +40,9 @@ from first_app.models import PurchaseOrderDetail
 from first_app.models import PurchaseOrder
 from django.db.models import Sum
 from first_app.services.inventory_service import InventoryService
+from django.db import transaction
 
+from django.core.exceptions import ValidationError
 NGROK_URL = config('NGROK_URL')
 
 class MyAdminSite(admin.AdminSite):
@@ -159,36 +163,61 @@ class ProductMaterialAdmin(admin.ModelAdmin):
 @admin.register(ProductMaster)
 class ProductMasterAdmin(admin.ModelAdmin):
     list_display = ('product_code', 'product_name', 'description', 'price', 'is_active', 'update_by', 'update_time', 'total_sold')
+    # def display_abc(self, obj):
+    #     return obj.product_code
+    # # Đây là nơi bạn đổi tên hiển thị trên cột
+    # display_abc.short_description = 'abc'
+    # # (Tùy chọn) Cho phép nhấn vào để sắp xếp theo product_code
+    # display_abc.admin_order_field = 'product_code'
+
     def total_sold(self, obj):
         total = OrderDetail.objects.filter(product=obj).aggregate(total=Sum('quantity'))['total']
         return total or None
     total_sold.short_description = 'Đã bán'
 
+class OrderDetailInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        has_product = False
+        for form in self.forms:
+            if not form.cleaned_data or form.cleaned_data.get("DELETE"):
+                continue
+            product = form.cleaned_data.get("product")
+            quantity = form.cleaned_data.get("quantity")
+
+            if not product:
+                raise ValidationError("Bạn phải chọn sản phẩm.")
+            if not quantity or quantity <= 0:
+                raise ValidationError("Số lượng phải lớn hơn 0.")
+
+            has_product = True
+
+        if not has_product:
+            raise ValidationError("Đơn hàng phải có ít nhất 1 sản phẩm.")
+
 class OrderDetailInline(admin.TabularInline):
     model = OrderDetail
-    extra = 0
-    can_delete = False
-    readonly_fields = ('product','quantity','totalPrice', 'create_at','customer_name','customer_phone','customer_address',)
-    fields = ('product','quantity','totalPrice','create_at','customer_name','customer_phone','customer_address',)
-    verbose_name = "Chi tiết sản phẩm"
-    verbose_name_plural = "Danh sách sản phẩm trong đơn hàng"
+    extra = 1
+    formset = OrderDetailInlineFormSet
+    can_delete = True
+    def get_fields(self, request, obj=None):
+        return ('product', 'quantity')
 
     def customer_name(self, obj):
-        return obj.order.customer.customer_name if obj.order and obj.order.customer else "-"
+        return obj.order.customer.customer_name if obj.order and obj.order.customer else "Trống"
     customer_name.short_description = "Tên khách hàng"
 
     def customer_phone(self, obj):
-        return obj.order.customer.phone if obj.order and obj.order.customer else "-"
+        return obj.order.customer.phone if obj.order and obj.order.customer else "Trống"
     customer_phone.short_description = "SĐT"
 
     def customer_address(self, obj):
-        return obj.order.customer.address if obj.order and obj.order.customer else "-"
+        return obj.order.customer.address if obj.order and obj.order.customer else "Trống"
     customer_address.short_description = "Địa chỉ"
 
 class PaymentStatusFilter(admin.SimpleListFilter):
     title = 'Chọn Trạng Thái Thanh Toán'
     parameter_name = 'payment_status'
-
     def lookups(self, request, model_admin):
         return (
             ('paid', 'Đã thanh toán'),
@@ -201,28 +230,74 @@ class PaymentStatusFilter(admin.SimpleListFilter):
             return queryset.filter(status__status_code=1)
         return queryset
 
-
-
-
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'orderId', 'partnerCode', 'amount', 'orderInfo', 'created_at', 'status', 'table', 'customer', 'qr_code')
+    list_display = ('id', 'orderId', 'partnerCode', 'amount', 'orderInfo', 'created_at', 'status', 'table', 'qr_code', 'note')
     actions = ['updatestatus', 'destroyorder', 'print_qr_action']
     inlines = [OrderDetailInline]
     change_form_template = "admin/first_app/order/change_form.html"
-    list_filter = (
-        'table',
-        PaymentStatusFilter,
-    )
+    list_filter = ('table',PaymentStatusFilter,)
+
+    def get_model_perms(self, request):
+
+        perms = super().get_model_perms(request)
+        if not request.user.has_perm("first_app.view_order"):
+            return {}
+        return perms
+    def note(self, obj):
+       if obj.customer and obj.customer.note:
+           return obj.customer.note
+       return "Không có ghi chú"
+    note.short_description = 'Ghi chú'
+
     def get_fieldsets(self, request, obj=None):
+        if not obj:
+            return [
+                ('Nhập thông tin', {
+                    'fields': ('orderId','table')
+                }),
+            ]
         return []
-    def has_change_permission(self, request, obj=None):
-        return False
+
+    def save_model(self, request, obj, form, change):
+        if not obj.partnerCode:
+            obj.partnerCode = "Đơn hàng của nhân viên"
+        if obj.amount is None:
+            obj.amount = 0
+        if not obj.orderInfo:
+            obj.orderInfo = "Nhận tại cửa hàng"
+        if not obj.status:
+            first_status = StatusMaster.objects.order_by('status_code').first()
+            obj.status = first_status
+        super().save_model(request, obj, form, change)
+        if not obj.qr_code:
+            qr_url = f"{settings.NGROK_URL}/order-detail/{obj.orderId}/"
+            qr_file = TableServices.generate_qr_for_order(qr_url)
+            obj.qr_code.save(
+                f"{obj.orderId}.png",
+                qr_file,
+                save=True
+            )
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        order = form.instance
+        total_bill = 0
+        details = order.orderdetail_set.all()
+        for detail in details:
+            detail.totalPrice = detail.product.price * detail.quantity
+            total_bill += detail.totalPrice
+            detail.save(update_fields=['totalPrice'])
+        # Cập nhật tổng tiền cho Order
+        order.amount = total_bill
+        order.save(update_fields=['amount'])
+
     def has_add_permission(self, request):
-        return False
+        return True
+    def has_change_permission(self, request, obj=None):
+        return True
     @admin.action(description="Đã thanh toán")
     def updatestatus(self, request, queryset):
-        # Lấy trạng thái "Đã thanh toán"
         paid_status = StatusMaster.objects.filter(status_code=2).first()
         if not paid_status:
             self.message_user(request, "Lỗi: Chưa cấu hình status_code = 2", level='error')
@@ -239,7 +314,6 @@ class OrderAdmin(admin.ModelAdmin):
             self.message_user(request, "Không có đơn hàng nào hợp lệ để thanh toán (Phải ở trạng thái Chờ).",level='warning')
         else:
             self.message_user(request, f"Đã xác nhận thanh toán và trừ tồn kho cho {updated_count} đơn hàng.")
-
 
     @admin.action(description="Hủy đơn hàng")
     def destroyorder(self, request, queryset):

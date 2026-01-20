@@ -138,6 +138,8 @@ class MomoService:
                 )
             except ProductMaster.DoesNotExist:
                 continue
+        request.session["cart"] = {}
+        request.session.modified = True
         request.session["orderId"] = order.orderId
         return redirect(pay_url)
 

@@ -218,16 +218,16 @@ def momo_return(request):
                     order.status = paid_status
                     order.save()
                     InventoryService.reduce_inventory(order)
-                    messages.success(request, "💰 Thanh toán thành công!")
+                    messages.success(request, " Thanh toán thành công!")
             else:
                 failed_status = StatusMaster.objects.filter(status_code=3).first()
                 if failed_status:
                     order.status = failed_status
                     order.save()
-                messages.warning(request, f"⚠️ Thanh toán thất bại hoặc bị hủy ({request.GET.get('message')})")
+                messages.warning(request, f"Thanh toán thất bại hoặc bị hủy ({request.GET.get('message')})")
         except Order.DoesNotExist:
             messages.error(request, "Không tìm thấy đơn hàng.")
-    # 👉 Sau khi xử lý xong, quay lại trang chủ (index)
+    #  Sau khi xử lý xong, quay lại trang chủ (index)
     return redirect("index")
 
 
@@ -461,15 +461,26 @@ def dat_don_hang(request):
 #xác nhận từ củaư hàng gửi email về
 def confirm_purchase_order_view(request, pk):
     po = get_object_or_404(PurchaseOrder, pk=pk)
-    # Nếu PO chưa có NCC, gán NCC đang đăng nhập
-    if po.supplier is None:
+
+    # 1. Kiểm tra xem đã có NCC nào nhận đơn này chưa
+    if po.supplier is not None:
+        # Nếu đã có NCC nhận rồi
+        if po.supplier == request.user.profile:
+            messages.info(request, f"Bạn đã nhận đơn hàng PO {po.po_id} trước đó rồi.")
+        else:
+            messages.error(request, f"Lỗi: Đơn hàng PO {po.po_id} đã được một nhà cung cấp khác nhận.")
+        return redirect('/admin/first_app/purchaseorder/')
+
+    # 2. Nếu chưa có ai nhận, tiến hành gán cho NCC hiện tại
+    try:
         po.supplier = request.user.profile
         po.save()
-    try:
+
         PurchaseOrderService.confirm_purchase_order(po)
-        messages.success(request, f"Đơn hàng PO {po.po_id} đã xác nhận. Email đã gửi về cửa hàng.")
+        messages.success(request, f"Đơn hàng PO {po.po_id} đã được bạn nhận thành công. Email đã gửi về cửa hàng.")
     except Exception as e:
         messages.error(request, f"Lỗi khi xác nhận đơn hàng: {e}")
+
     return redirect('/admin/first_app/purchaseorder/')
 
 #xử lý link chấp nhận từ chối của cửa hàng đối với ncc
@@ -488,6 +499,7 @@ def po_accept(request, token):
         po.save()
     return redirect('/admin/first_app/purchaseorder/')  # hoặc page thông báo
 
+
 def po_reject(request, token):
     s = URLSafeSerializer(settings.SECRET_KEY)
     try:
@@ -497,8 +509,18 @@ def po_reject(request, token):
         return HttpResponse("Link không hợp lệ!", status=400)
 
     po = get_object_or_404(PurchaseOrder, po_id=po_id)
-    status_rejected = StatusMaster.objects.filter(status_code=3).first()  # Trạng thái 3: từ chối NCC
-    if status_rejected:
-        po.status = status_rejected
+
+    # Lấy lại trạng thái "Chờ NCC nhận" (code 1)
+    status_waiting = StatusMaster.objects.filter(status_code=1).first()
+
+    if status_waiting:
+        # Giải phóng đơn hàng
+        po.status = status_waiting
+        po.supplier = None  # Quan trọng: Xóa NCC bị từ chối để người khác có thể nhận
         po.save()
+
+        # Có thể thêm thông báo hoặc ghi chú vào PO để Admin biết lý do từ chối
+        messages.warning(request,
+                         f"Cửa hàng đã từ chối NCC. Đơn hàng PO {po.po_id} đã được đưa về trạng thái chờ nhận lại.")
+
     return redirect('/admin/first_app/purchaseorder/')

@@ -60,7 +60,6 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.ForeignKey(StatusMaster,on_delete=models.SET_NULL,null=True,blank=True,related_name='orders')
     qr_code = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
-
     customer = models.ForeignKey('Customer',on_delete=models.SET_NULL,null=True,blank=True,related_name='orders'
 
     )
@@ -101,8 +100,8 @@ class Material(models.Model):
 
 class Inventory(models.Model):
     material = models.OneToOneField(Material,on_delete=models.CASCADE,primary_key=True,related_name='inventory' )
-    quantity = models.FloatField(default=0)           # Số lượng còn lại
-    min_quantity = models.FloatField(default=10)      # Ngưỡng cảnh báo
+    quantity = models.FloatField(default=0)
+    min_quantity = models.FloatField(default=10)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

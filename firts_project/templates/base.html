@@ -260,7 +260,20 @@ body {
         position: relative;
         flex-wrap: wrap; /* cho header xếp các dòng */
     }
+@media (max-width: 1199px) {
+  .navmenu .dropdown ul {
+    display: none; /* Mặc định ẩn trên mobile */
+    padding: 10px 0;
+    margin: 10px 20px;
+    background-color: #f6f6f6;
+    border: 1px solid #eee;
+  }
 
+  /* Khi có class active thì mới hiện */
+  .navmenu .dropdown > .dropdown-active {
+    display: block !important;
+  }
+}
     .search-form {
         position: absolute;
         bottom: -50px; /* nằm dưới menu */

@@ -15,6 +15,7 @@ class TableServices:
         buffer.seek(0)
         return buffer
     @staticmethod
+
     def generate_qr_for_order(url):
         qr = qrcode.QRCode(box_size=10, border=4)
         qr.add_data(url)

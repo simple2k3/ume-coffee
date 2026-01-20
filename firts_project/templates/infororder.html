@@ -2,25 +2,26 @@
 {% load static %}
 
 {% block title %}Thông tin giao hàng{% endblock %}
+
 {% block content %}
 <div class="container py-5">
   <h2 class="text-center mb-4">Thông tin giao hàng</h2>
 
-  <!-- Form bao cả 2 cột để tất cả input đều gửi lên cùng lúc -->
-    {% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-  {% endfor %}
-{% endif %}
-<form method="post" action="{% url 'place_order' %}" class="row g-3">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" action="{% url 'place_order' %}" class="row g-4">
     {% csrf_token %}
 
-    <!-- CỘT TRÁI: FORM THÔNG TIN KHÁCH -->
     <div class="col-md-6">
-      <div class="p-4 rounded shadow-sm bg-white">
+      <div class="p-4 rounded shadow-sm bg-white h-100">
+        <h5 class="mb-3 border-bottom pb-2">Thông tin người nhận</h5>
         <div class="mb-3">
           <label for="customer_name" class="form-label">Họ và tên</label>
           <input type="text" id="customer_name" name="customer_name" class="form-control" required>
@@ -28,91 +29,109 @@
 
         <div class="mb-3">
           <label for="phone" class="form-label">Số điện thoại</label>
-          <input type="text" id="phone" name="phone" class="form-control" required pattern="^0[0-9]{9,10}$" title="Số điện thoại phải bắt đầu bằng 0 và có 10 hoặc 11 chữ số" >
-          <div class="invalid-feedback">Số điện thoại không hợp lệ.</div>
+          <input type="text" id="phone" name="phone" class="form-control" required pattern="^0[0-9]{9,10}$" title="Số điện thoại phải bắt đầu bằng 0 và có 10 hoặc 11 chữ số">
         </div>
+
         <div class="mb-3">
           <label for="address" class="form-label">Địa chỉ</label>
           <input type="text" id="address" name="address" class="form-control" required>
         </div>
+
         <div class="mb-3">
           <label for="email" class="form-label">Email</label>
           <input type="email" id="email" name="email" class="form-control" required>
-          <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
         </div>
+
         <div class="mb-3">
           <label for="note" class="form-label">Ghi chú</label>
           <textarea id="note" name="note" rows="2" class="form-control"></textarea>
         </div>
-       <div class="mb-3">
-          <label class="form-label">Hình thức nhận hàng</label>
-           <div>
-               <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="order_type" id="delivery" value="delivery" checked>
-            <label class="form-check-label" for="delivery">Giao tận nơi</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="order_type" id="pickup" value="pickup">
-            <label class="form-check-label" for="pickup">Nhận tại cửa hàng</label>
-          </div>
-           </div>
 
-        </div>
-          <div class="text-center mt-4">
-          <button type="submit" class="btn btn-dark px-4 py-2">
-            <i class="bi bi-check-circle me-1"></i> Xác nhận đặt hàng
-          </button>
+        <div class="mb-3">
+          <label class="form-label">Hình thức nhận hàng</label>
+          <div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="order_type" id="delivery" value="delivery" checked>
+              <label class="form-check-label" for="delivery">Giao tận nơi</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="order_type" id="pickup" value="pickup">
+              <label class="form-check-label" for="pickup">Nhận tại cửa hàng</label>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- CỘT PHẢI: THÔNG TIN ĐƠN HÀNG + PHƯƠNG THỨC THANH TOÁN -->
     <div class="col-md-6">
-      <div class="p-4 rounded shadow-sm bg-white">
-        <h5 class="mb-3">Đơn hàng của bạn</h5>
+      <div class="p-4 rounded shadow-sm bg-white h-100 d-flex flex-column">
+        <h5 class="mb-3 border-bottom pb-2">Đơn hàng của bạn</h5>
 
         {% if products %}
-          <ul class="list-group mb-3">
+          <ul class="list-group mb-3" style="max-height: 300px; overflow-y: auto;">
             {% for product in products %}
               <li class="list-group-item d-flex align-items-center">
                 <img src="{{ product.imageUrl }}" alt="{{ product.product_name }}"
-                     class="me-3 rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                     class="me-3 rounded" style="width: 50px; height: 50px; object-fit: cover;">
                 <div class="flex-grow-1">
-                  <strong>{{ product.product_name }}</strong><br>
-                  <small>Số lượng: {{ product.quantity }}</small>
+                  <strong class="small">{{ product.product_name }}</strong><br>
+                  <small class="text-muted">Số Lượng: {{ product.quantity }}</small>
                 </div>
-                <span class="text-end">{{ product.total_price|floatformat:0 }}₫</span>
+                <span class="text-end small">{{ product.total_price|floatformat:0 }}₫</span>
               </li>
             {% endfor %}
           </ul>
 
-          <div class="d-flex justify-content-between border-top pt-3 mb-3">
-            <strong>Tổng cộng:</strong>
-            <strong id="grand-total">{{ grand_total|floatformat:0 }}₫</strong>
+          <div class="d-flex justify-content-between border-top pt-3 mb-4">
+            <strong class="fs-5">Tổng cộng:</strong>
+            <strong id="grand-total" class="fs-5 text-danger">{{ grand_total|floatformat:0 }}₫</strong>
           </div>
 
-          <!-- PHƯƠNG THỨC THANH TOÁN (bắt buộc nằm trong cùng form) -->
-          <div class="mb-3">
-            <label class="form-label">Phương thức thanh toán</label>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Phương thức thanh toán</label>
+            <div class="form-check p-3 border rounded mb-2">
+              <input class="form-check-input ms-0 me-2" type="radio" name="payment_method" id="cod" value="COD" checked>
               <label class="form-check-label" for="cod">
-                <i class="bi bi-cash-coin"></i> Thanh toán khi nhận hàng (COD)
+                <i class="bi bi-cash-coin me-1"></i> Thanh toán khi nhận hàng (COD)
               </label>
             </div>
-            <div class="form-check mt-2">
-              <input class="form-check-input" type="radio" name="payment_method" id="momo" value="MOMO">
+            <div class="form-check p-3 border rounded">
+              <input class="form-check-input ms-0 me-2" type="radio" name="payment_method" id="momo" value="MOMO">
               <label class="form-check-label" for="momo">
-                <i class="bi bi-phone"></i> Thanh toán qua MoMo
+                <i class="bi bi-phone me-1"></i> Thanh toán qua MoMo
               </label>
             </div>
+          </div>
+
+          <div class="mt-auto pt-3">
+            <button type="submit" class="btn btn-dark w-100 py-3 fs-5 shadow-sm">
+              <i class="bi bi-check-circle me-2"></i> XÁC NHẬN ĐẶT HÀNG
+            </button>
+            <p class="text-center text-muted small mt-2">Vui lòng kiểm tra kỹ thông tin trước khi đặt hàng</p>
           </div>
 
         {% else %}
-          <p class="text-muted">Giỏ hàng trống.</p>
+          <div class="text-center py-5">
+            <p class="text-muted">Giỏ hàng trống.</p>
+            <a href="{% url 'portfolio' %}" class="btn btn-outline-dark">Quay lại mua hàng</a>
+          </div>
         {% endif %}
       </div>
     </div>
   </form>
 </div>
+
+<style>
+  /* Tối ưu cho Mobile */
+  @media (max-width: 768px) {
+    .btn-dark {
+      position: sticky;
+      bottom: 10px; /* Nút sẽ dính nhẹ ở dưới màn hình mobile để dễ bấm */
+      z-index: 100;
+    }
+    .col-md-6 {
+      margin-bottom: 20px;
+    }
+  }
+</style>
 {% endblock %}

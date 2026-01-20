@@ -1,173 +1,109 @@
 {% extends "admin/change_form.html" %}
 {% load static %}
-
 {% block content %}
-<style>
-  /* Ẩn phần admin thừa */
-  .submit-row, .breadcrumbs, .inline-group .tabular table thead {
-    display: none !important;
-  }
-  body { background: #f5f7fa; margin: 0; padding: 20px 0; font-family: 'Segoe UI', Arial, sans-serif; }
-
-  /* Container chính */
-  .order-detail-container {
-    max-width: 1100px;
-    margin: 0 auto 20px;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-    overflow: hidden;
-    display: flex;
-    flex-wrap: wrap;
-  }
-
-  /* Cột sản phẩm */
-  .products {
-    flex: 3;
-    min-width: 300px;
-    padding: 35px;
-  }
-  .products h3 { color: #006fe6; font-size: 1.6em; margin: 0 0 25px 0; }
-
-  .products table { width: 100%; border-collapse: collapse; }
-  .products th {
-    background: #006fe6; color: white; padding: 14px 10px; text-align: left; font-weight: 600;
-  }
-  .products th:nth-child(2) { text-align: center; width: 110px; }
-  .products th:nth-child(3) { text-align: right; width: 140px; }
-  .products td { padding: 14px 10px; border-bottom: 1px solid #eee; }
-  .products td:nth-child(2) { text-align: center; }
-  .products td:nth-child(3) { text-align: right; font-weight: 600; color: #2c3e50; }
-
-  .no-products { text-align: center; padding: 50px; color: #95a5a6; font-style: italic; font-size: 1.1em; }
-
-  .qr-code { text-align: center; margin-top: 40px; }
-  .qr-code img {
-    width: 160px; height: 160px; padding: 12px; background: white;
-    border: 1px solid #ddd solid; border-radius: 12px;
-  }
-  .qr-code p { margin: 12px 0 0; color: #555; font-size: 0.95em; }
-
-  /* Cột thông tin khách hàng */
-  .customer-info {
-    flex: 2;
-    min-width: 300px;
-    background: #f8fbff;
-    padding: 35px;
-    border-left: 1px solid #e0e7ff;
-  }
-  .customer-info h3 { color: #006fe6; font-size: 1.6em; margin: 0 0 30px 0; }
-
-  .info-list p { margin: 18px 0; font-size: 1.1em; line-height: 1.6; }
-  .info-list strong { color: #2c3e50; min-width: 120px; display: inline-block; }
-
-  .status-badge {
-    padding: 7px 16px; background: #e3f2fd; color: #1976d2;
-    border-radius: 30px; font-weight: 600; font-size: 0.95em;
-  }
-  .total-amount {
-    font-size: 1.8em !important; color: #e74c3c !important;
-    font-weight: bold; margin: 30px 0 0 !important;
-  }
-
-  /* PHẦN NÚT XUẤT HÓA ĐƠN - NỀN TRẮNG, NỔI BẬT RIÊNG */
-  .export-section {
-    width: 100%;
-    background: white;                    /* Nền trắng sạch */
-    padding: 50px 30px;
-    text-align: center;
-    border-top: 1px solid #eee;
-  }
-
-  .export-btn {
-    display: inline-block;
-    background: #27ae60;
-    color: white !important;
-    font-size: 1.5em;
-    font-weight: bold;
-    padding: 20px 70px;
-    border-radius: 16px;
-    text-decoration: none;
-    box-shadow: 0 12px 30px rgba(39,174,96,0.35);
-    transition: all 0.3s ease;
-    border: 3px solid #219653;
-  ;
-  }
-
-  .export-btn:hover {
-    background: #219653;
-    transform: translateY(-6px);
-    box-shadow: 0 18px 40px rgba(39,174,96,0.45);
-  }
-
-  .export-btn:active {
-    transform: translateY(-2px);
-  }
-
-  .export-note {
-    color: #666;
-    margin-top: 16px;
-    font-size: 1.05em;
-  }
-
-  @media (max-width: 900px) {
-    .order-detail-container { flex-direction: column; }
-    .customer-info { border-left: none; border-top: 1px solid #e0e7ff; }
-  }
-</style>
-
-<div class="order-detail-container">
-
-  <!-- DANH SÁCH SẢN PHẨM -->
-  <div class="products">
-    <h3>Danh sách sản phẩm</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Tên sản phẩm</th>
-          <th>Số lượng</th>
-          <th>Giá</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for detail in original.orderdetail_set.all %}
-        <tr>
-          <td>{{ detail.product.product_name }}</td>
-          <td>{{ detail.quantity }}</td>
-          <td>{{ detail.totalPrice|floatformat:0 }}₫</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="3" class="no-products">Không có sản phẩm nào.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-        {% if original.qr_code %}
-        <div class="qr-code">
-          <img src="{{ original.qr_code.url }}" alt="QR Code">
-          <p>Quét mã để xem chi tiết đơn hàng</p>
+    {% if add %}
+        <div class="default-admin-form" style="background: white; padding: 20px; border-radius: 8px;">
+            {{ block.super }}
         </div>
-        {% endif %}
-  </div>
+        <style>
+            /* Hiện lại các nút lưu và breadcrumbs khi thêm mới */
+            .submit-row { display: block !important; }
+            .breadcrumbs { display: block !important; }
+        </style>
 
-  <!-- THÔNG TIN KHÁCH HÀNG -->
-  <div class="customer-info">
-    <h3>Thông tin đơn hàng</h3>
-    <div class="info-list">
-      <p><strong>Khách hàng:</strong> {{ original.customer.customer_name }}</p>
-      <p><strong>SĐT:</strong> {{ original.customer.phone }}</p>
-      <p><strong>Địa chỉ:</strong> {{ original.customer.address }}</p>
-      <p><strong>Trạng thái:</strong> <span class="status-badge">{{ original.status }}</span></p>
-      <p class="total-amount"><strong>Tổng tiền:</strong> {{ original.amount|floatformat:0 }}₫</p>
-    </div>
-  </div>
+    {% else %}
+        <style>
+          .submit-row, .breadcrumbs, .inline-group .tabular table thead {
+            display: none !important;
+          }
+          body { background: #f5f7fa; margin: 0; padding: 20px 0; font-family: 'Segoe UI', Arial, sans-serif; }
 
-</div>
+          /* Container chính */
+          .order-detail-container {
+            max-width: 1100px; margin: 0 auto 20px; background: white;
+            border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            overflow: hidden; display: flex; flex-wrap: wrap;
+          }
 
-<div class="export-section">
-<a href="{% url 'export_invoice' pk=original.pk %}" class="export-btn" target="_blank">
-  Xuất hóa đơn PDF
-</a>
-</div>
+          /* Cột sản phẩm */
+          .products { flex: 3; min-width: 300px; padding: 35px; }
+          .products h3 { color: #006fe6; font-size: 1.6em; margin: 0 0 25px 0; }
+          .products table { width: 100%; border-collapse: collapse; }
+          .products th { background: #006fe6; color: white; padding: 14px 10px; text-align: left; font-weight: 600; }
+          .products td { padding: 14px 10px; border-bottom: 1px solid #eee; }
+          .products td:nth-child(3) { text-align: right; font-weight: 600; color: #2c3e50; }
 
+          /* Cột thông tin khách hàng */
+          .customer-info { flex: 2; min-width: 300px; background: #f8fbff; padding: 35px; border-left: 1px solid #e0e7ff; }
+          .customer-info h3 { color: #006fe6; font-size: 1.6em; margin: 0 0 30px 0; }
+          .status-badge { padding: 7px 16px; background: #e3f2fd; color: #1976d2; border-radius: 30px; font-weight: 600; }
+          .total-amount { font-size: 1.8em !important; color: #e74c3c !important; font-weight: bold; margin-top: 30px !important; }
+
+          /* PHẦN NÚT XUẤT HÓA ĐƠN */
+          .export-section { width: 100%; background: white; padding: 50px 30px; text-align: center; border-top: 1px solid #eee; }
+          .export-btn {
+            display: inline-block; background: #27ae60; color: white !important;
+            font-size: 1.5em; font-weight: bold; padding: 20px 70px; border-radius: 16px;
+            text-decoration: none; box-shadow: 0 12px 30px rgba(39,174,96,0.35);
+            transition: all 0.3s ease; border: 3px solid #219653;
+          }
+          .export-btn:hover { background: #219653; transform: translateY(-6px); }
+
+          @media (max-width: 900px) {
+            .order-detail-container { flex-direction: column; }
+            .customer-info { border-left: none; border-top: 1px solid #e0e7ff; }
+          }
+        </style>
+
+        <div class="order-detail-container">
+          <div class="products">
+            <h3>Danh sách sản phẩm</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Tên sản phẩm</th>
+                  <th style="text-align: center;">Số lượng</th>
+                  <th style="text-align: right;">Giá</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for detail in original.orderdetail_set.all %}
+                <tr>
+                  <td>{{ detail.product.product_name }}</td>
+                  <td style="text-align: center;">{{ detail.quantity }}</td>
+                  <td style="text-align: right;">{{ detail.totalPrice|floatformat:0 }}₫</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align: center; padding: 50px; color: #95a5a6;">Không có sản phẩm nào.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            {% if original.qr_code %}
+            <div class="qr-code" style="text-align: center; margin-top: 40px;">
+              <img src="{{ original.qr_code.url }}" alt="QR Code" style="width: 160px; border-radius: 12px; border: 1px solid #ddd; padding: 10px;">
+              <p style="margin-top: 10px; color: #555;">Quét mã đơn hàng</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="customer-info">
+            <h3>Thông tin đơn hàng</h3>
+            <div class="info-list">
+              <p><strong>Khách hàng:</strong> {{ original.customer.customer_name|default:"-" }}</p>
+              <p><strong>SĐT:</strong> {{ original.customer.phone|default:"-" }}</p>
+              <p><strong>Địa chỉ:</strong> {{ original.customer.address|default:"-" }}</p>
+              <p><strong>Trạng thái:</strong> <span class="status-badge">{{ original.status }}</span></p>
+                <p><strong>Ghi chú:</strong> <span >{{ original.customer.note|default:"Không có ghi chú" }}</span></p>
+              <p class="total-amount"><strong>Tổng tiền:</strong> {{ original.amount|floatformat:0 }}₫</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="export-section">
+            <a href="{% url 'export_invoice' pk=original.pk %}" class="export-btn">
+                XUẤT HÓA ĐƠN
+            </a>
+        </div>
+    {% endif %}
 {% endblock %}
